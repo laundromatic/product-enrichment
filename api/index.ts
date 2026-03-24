@@ -229,7 +229,7 @@ ${nav}
   <div class="hero-blob hero-blob-3"></div>
   <div class="container">
     <h1>ShopGraph</h1>
-    <p class="hero-sub">Structured product data for AI agents. Any URL, any merchant, any platform.</p>
+    <p class="hero-sub">Structured product data for AI agents. Product data where platform APIs don't reach.</p>
     <div class="hero-buttons">
       <a class="btn btn-outline" href="https://github.com/laundromatic/shopgraph">View on GitHub</a>
       <a class="btn btn-primary" href="/mcp">MCP Endpoint</a>
@@ -421,7 +421,7 @@ ${nav}
 <div class="gradient-line" style="display:none"></div>
 
 ${footer}
-`, `<meta name="description" content="Structured product data extraction for AI agents. Any URL, any merchant, any platform. MCP server with Schema.org and LLM extraction.">`);
+`, `<meta name="description" content="Structured product data extraction for AI agents. Product data where platform APIs don't reach. MCP server with Schema.org and LLM extraction.">`);
 
 // ---- Terms of Service ----
 const tosHTML = pageShell('Terms of Service — ShopGraph', `
