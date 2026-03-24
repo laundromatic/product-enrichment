@@ -1,0 +1,31 @@
+{
+  "name": "@laundromatic/product-enrichment",
+  "version": "1.0.0",
+  "description": "MCP server for product data enrichment with Stripe MPP payments",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "test": "vitest",
+    "test:run": "vitest run"
+  },
+  "keywords": ["mcp", "product-enrichment", "stripe", "mpp"],
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "@modelcontextprotocol/sdk": "^1.8.0",
+    "dotenv": "^16.4.7",
+    "node-cache": "^5.1.2",
+    "stripe": "^17.5.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.12.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
