@@ -2,6 +2,8 @@
 
 MCP server for product data enrichment with Stripe MPP (Machine Payments Protocol) payment gating.
 
+[![ShopGraph MCP server](https://glama.ai/mcp/servers/laundromatic/shopgraph/badges/card.svg)](https://glama.ai/mcp/servers/laundromatic/shopgraph)
+
 ## What it does
 
 Agents connect via Model Context Protocol and call enrichment tools to extract structured product data from URLs. Requests are payment-gated via Stripe: unauthenticated calls receive a 402 challenge, authenticated calls with a `payment_method_id` are processed and billed.
