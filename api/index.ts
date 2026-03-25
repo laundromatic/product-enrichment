@@ -66,7 +66,7 @@ ul,ol{padding-left:24px}
 .nav-links a:hover{color:#202124;text-decoration:none}
 
 /* Hero */
-}
+.hero{position:relative;overflow:hidden;padding:50px 0;text-align:center}
 .hero-blob{position:absolute;width:600px;height:600px;border-radius:50%;filter:blur(120px);opacity:.35;pointer-events:none}
 .hero-blob-1{background:radial-gradient(circle,#4285f4,transparent 70%);top:-200px;right:-100px}
 .hero-blob-2{background:radial-gradient(circle,#34a853,transparent 70%);bottom:-200px;left:-100px}
@@ -101,7 +101,6 @@ ul,ol{padding-left:24px}
 /* Position cards */
 .position-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px}
 .position-card{background:#fff;border:1px solid #dadce0;border-radius:12px;padding:20px;text-align:center}
-.position-card .emoji{font-size:1.6em;margin-bottom:8px}
 .position-card strong{display:block;color:#202124;margin-bottom:4px}
 .position-card span{font-size:.85em;color:#595959}
 @media(max-width:768px){.position-grid{grid-template-columns:1fr}}
@@ -110,7 +109,6 @@ ul,ol{padding-left:24px}
 /* Use case cards */
 .usecase-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
 .usecase-card{background:#fff;border:1px solid #dadce0;border-radius:12px;padding:28px;box-shadow:0 1px 4px rgba(60,64,67,.15)}
-.usecase-card .usecase-icon{font-size:1.6em;margin-bottom:12px}
 .usecase-card h3{margin-bottom:8px}
 .usecase-card p{font-size:.95em;margin:0}
 @media(max-width:768px){.usecase-grid{grid-template-columns:1fr}}
@@ -138,11 +136,12 @@ ul,ol{padding-left:24px}
 @media(max-width:768px){.steps-grid{grid-template-columns:1fr}}
 
 /* Data fields */
-.data-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:24px}
-.data-field{background:#fff;border:1px solid #dadce0;border-radius:8px;padding:14px 18px;display:flex;align-items:center;gap:10px}
-.data-field .icon{font-size:1.1em}
-.data-field .label{font-weight:500;color:#202124;font-size:.9em}
-.data-field .meta{font-size:.75em;color:#595959;display:block}
+.data-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:24px;align-items:start}
+.data-json pre{margin:0;font-size:.82em}
+.data-fields-list{display:flex;flex-direction:column;gap:8px}
+.data-field-item{display:flex;align-items:baseline;gap:8px}
+.data-field-item .label{font-weight:600;color:#202124;font-size:.9em;font-family:'Google Sans Code','Google Sans Mono','SF Mono',monospace}
+.data-field-item .meta{font-size:.9em;color:#595959}
 @media(max-width:768px){.data-grid{grid-template-columns:1fr}}
 
 /* Integration */
@@ -151,8 +150,11 @@ ul,ol{padding-left:24px}
 
 /* Cache note */
 .cache-note{display:flex;align-items:flex-start;gap:12px;background:#e8f0fe;border-radius:12px;padding:20px 24px;margin-top:24px;max-width:720px;margin-left:auto;margin-right:auto}
-.cache-note .icon{font-size:1.3em;flex-shrink:0}
 .cache-note p{margin:0;font-size:.95em;color:#202124}
+
+/* Works With pills */
+.works-pill{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#fff;border:1px solid #dadce0;border-radius:40px;font-size:0.95em;font-weight:500;color:#202124}
+.works-pill svg{flex-shrink:0}
 
 /* Footer */
 .footer-section{border-top:1px solid #dadce0;padding:32px 0 32px;margin-top:0}
@@ -269,7 +271,6 @@ function buildQualityDashboard(stats: ReturnType<typeof getDashboardStats>): str
             <td style="padding:10px 12px;color:#202124;font-weight:500">${v.name}</td>
             <td style="padding:10px 12px;text-align:right;color:#595959">${v.tested}</td>
             <td style="padding:10px 12px;text-align:right"><span style="color:${v.success_rate >= 90 ? '#34a853' : v.success_rate >= 70 ? '#fbbc04' : '#595959'};font-weight:600">${v.success_rate}%</span></td>
-            <td style="padding:10px 12px;text-align:right;color:#595959">${v.avg_confidence.toFixed(2)}</td>
           </tr>`)
     .join('\n');
 
@@ -301,7 +302,6 @@ function buildQualityDashboard(stats: ReturnType<typeof getDashboardStats>): str
             <th style="text-align:left;padding:10px 12px;color:#595959;font-weight:600;font-size:.85em">Vertical</th>
             <th style="text-align:right;padding:10px 12px;color:#595959;font-weight:600;font-size:.85em">Pages</th>
             <th style="text-align:right;padding:10px 12px;color:#595959;font-weight:600;font-size:.85em">Success</th>
-            <th style="text-align:right;padding:10px 12px;color:#595959;font-weight:600;font-size:.85em">Confidence</th>
           </tr>
         </thead>
         <tbody>
@@ -323,6 +323,8 @@ function buildLandingHTML(dashboardHTML: string): string {
   return pageShell('ShopGraph — Structured Product Data for AI Agents', `
 ${nav}
 
+<main>
+
 <!-- Hero -->
 <section class="hero">
   <div class="hero-blob hero-blob-1"></div>
@@ -330,7 +332,7 @@ ${nav}
   <div class="hero-blob hero-blob-3"></div>
   <div class="container">
     <h1>ShopGraph</h1>
-    <p class="hero-sub">Structured product data from the 30% of retailers that aren't on Shopify, Google, or Amazon &mdash; the DTC brands, independent shops, and niche suppliers that platform catalogs miss.</p>
+    <p class="hero-sub">Structured product data from the millions of retailers that aren't on Shopify, Google, or Amazon. The DTC brands, independent shops, and niche suppliers that platform catalogs miss.</p>
     <div class="hero-buttons">
       <a class="btn btn-outline" href="https://github.com/laundromatic/shopgraph">View on GitHub</a>
       <a class="btn btn-primary" href="/mcp">MCP Endpoint</a>
@@ -338,11 +340,35 @@ ${nav}
   </div>
 </section>
 
-<!-- Quality Dashboard -->
-${dashboardHTML}
+<!-- How It Works -->
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <h2>How It Works</h2>
+    </div>
+
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-number">1</div>
+        <h3>Send a URL</h3>
+        <p>Your agent sends any product URL to ShopGraph via MCP.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <h3>Extract Data</h3>
+        <p>Schema.org parsing first. If markup is missing, Gemini LLM extracts from raw page content.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <h3>Get Structured JSON</h3>
+        <p>Clean data with confidence scores. Cached for 24 hours for free repeat access.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- What It Does -->
-<section class="section">
+<section class="section section-alt">
   <div class="container">
     <div class="section-header">
       <h2>What It Does</h2>
@@ -377,17 +403,14 @@ ${dashboardHTML}
 
     <div class="position-grid">
       <div class="position-card">
-        <div class="emoji">🟢</div>
         <strong>Shopify Catalog</strong>
         <span>Covers Shopify merchants</span>
       </div>
       <div class="position-card">
-        <div class="emoji">🔵</div>
         <strong>Google UCP</strong>
         <span>Covers Google-indexed merchants</span>
       </div>
       <div class="position-card">
-        <div class="emoji">🌐</div>
         <strong>ShopGraph</strong>
         <span>Covers the open web</span>
       </div>
@@ -395,58 +418,135 @@ ${dashboardHTML}
   </div>
 </section>
 
+<!-- Extracted Data -->
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <h2>Extracted Data</h2>
+      <p style="white-space:nowrap">Every field includes a confidence score so agents know how much to trust it.</p>
+    </div>
 
-<!-- Who Uses ShopGraph -->
+    <div class="data-grid">
+      <div class="data-json">
+        <pre>{
+  "product_name": "Men's Tree Runners",
+  "brand": "Allbirds",
+  "price": { "amount": 100, "currency": "USD" },
+  "availability": "in_stock",
+  "categories": ["Shoes", "Running"],
+  "image_urls": ["https://..."],
+  "color": ["Thunder"],
+  "material": ["Eucalyptus fiber"],
+  "confidence": { "overall": 0.95 }
+}</pre>
+      </div>
+      <div class="data-fields-list">
+        <div class="data-field-item"><span class="label">product_name</span><span class="meta">Product title</span></div>
+        <div class="data-field-item"><span class="label">brand</span><span class="meta">Manufacturer or brand name</span></div>
+        <div class="data-field-item"><span class="label">price</span><span class="meta">Current price with currency</span></div>
+        <div class="data-field-item"><span class="label">availability</span><span class="meta">In stock or out of stock</span></div>
+        <div class="data-field-item"><span class="label">categories</span><span class="meta">Product taxonomy</span></div>
+        <div class="data-field-item"><span class="label">image_urls</span><span class="meta">Product image URLs</span></div>
+        <div class="data-field-item"><span class="label">color</span><span class="meta">Available colors</span></div>
+        <div class="data-field-item"><span class="label">material</span><span class="meta">Fabric, metal, etc.</span></div>
+        <div class="data-field-item"><span class="label">confidence</span><span class="meta">Per-field and overall scores</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Works With -->
 <section class="section section-alt">
   <div class="container">
     <div class="section-header">
-      <h2>Who Uses ShopGraph</h2>
+      <h2>Works With</h2>
+      <p>Any MCP-compatible client can connect to ShopGraph.</p>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:800px;margin:0 auto">
+      <span class="works-pill"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="#D97706"/><text x="12" y="16.5" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#fff">C</text></svg> Claude</span>
+      <span class="works-pill"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="#D97706"/><text x="12" y="16" text-anchor="middle" font-family="monospace" font-size="11" font-weight="700" fill="#fff">CC</text></svg> Claude Code</span>
+      <span class="works-pill"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="#7C3AED"/><text x="12" y="17" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#fff">&#x2318;</text></svg> Cursor</span>
+      <span class="works-pill"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="#0D9488"/><text x="12" y="16.5" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#fff">W</text></svg> Windsurf</span>
+      <span class="works-pill"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="#000"/><path d="M12 5C8.13 5 5 8.13 5 12s3.13 7 7 7 7-3.13 7-7-3.13-7-7-7zm0 2.5c.69 0 1.25.56 1.25 1.25 0 .34-.14.65-.36.88l-1.14 1.14c-.15.15-.25.35-.25.57V13h1v-.66l.9-.9C13.78 11.06 14 10.55 14 10c0-1.1-.9-2-2-2s-2 .9-2 2h1.25c0-.41.34-.75.75-.75z" fill="#fff"/></svg> OpenAI</span>
+      <span class="works-pill"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="#2563EB"/><text x="12" y="16" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="700" fill="#fff">CA</text></svg> CrewAI</span>
+      <span class="works-pill"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="#059669"/><text x="12" y="16" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="700" fill="#fff">LG</text></svg> LangGraph</span>
+      <span class="works-pill"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="#DC2626"/><text x="12" y="16" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="700" fill="#fff">AG</text></svg> AutoGen</span>
+      <span class="works-pill"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="#6B7280"/><text x="12" y="16" text-anchor="middle" font-family="monospace" font-size="9" font-weight="700" fill="#fff">MCP</text></svg> Any MCP Client</span>
+    </div>
+  </div>
+</section>
+
+<!-- Integration -->
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <h2>Integration</h2>
+      <p>Connect any MCP-compatible client. Pay per call via Stripe Machine Payments Protocol.</p>
     </div>
 
-    <p style="max-width:700px;margin:0 auto 32px;color:#595959;text-align:center">Shopify Catalog and Google UCP cover their own merchants. ShopGraph covers the millions of product pages they don't &mdash; the DTC brands, specialty suppliers, and independent retailers with no API.</p>
+    <div class="integration-block">
+      <p style="margin-bottom:4px;font-weight:500;color:#202124">Connect your MCP client:</p>
+      <pre>{
+  "mcpServers": {
+    "shopgraph": {
+      "type": "url",
+      "url": "https://shopgraph.dev/mcp"
+    }
+  }
+}</pre>
+    </div>
+
+    <div class="cache-note" style="margin-top:32px">
+      <p>No API keys needed for discovery. Payment handled via <strong>Stripe MPP</strong>. Your agent pays per call using a Stripe-issued token. No subscriptions, no minimums.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Use Cases -->
+<section class="section section-alt">
+  <div class="container">
+    <div class="section-header">
+      <h2>Use Cases</h2>
+    </div>
+
+    <p style="max-width:700px;margin:0 auto 32px;color:#595959;text-align:center">Shopify Catalog and Google UCP cover their own merchants. ShopGraph covers the millions of product pages they don't, including DTC brands, specialty suppliers, and independent retailers with no API.</p>
 
     <div class="usecase-grid">
       <div class="usecase-card">
-        <div class="usecase-icon">&#x1F50D;</div>
-        <h3>Price Comparison &amp; Market Research</h3>
+        <h3>Price Comparison and Market Research</h3>
         <p>Survey a product category across hundreds of brands in hours, not weeks. Your agent calls ShopGraph for every merchant that isn't on Shopify or Amazon.</p>
       </div>
       <div class="usecase-card">
-        <div class="usecase-icon">&#x1F4CA;</div>
         <h3>Competitive Intelligence</h3>
-        <p>Monitor competitors' pricing, availability, and catalog changes. No API access or partnership required &mdash; ShopGraph reads the public product page.</p>
+        <p>Monitor competitors' pricing, availability, and catalog changes. No API access or partnership required. ShopGraph reads the public product page.</p>
       </div>
       <div class="usecase-card">
-        <div class="usecase-icon">&#x1F517;</div>
-        <h3>Affiliate Networks &amp; Content</h3>
-        <p>Building product roundups? Your agent needs prices and images from every merchant you link to. ShopGraph structures the data from the ones without feeds &mdash; Sovrn, Skimlinks, and independent publishers.</p>
+        <h3>Affiliate Networks and Content</h3>
+        <p>Building product roundups? Your agent needs prices and images from every merchant you link to. ShopGraph structures the data from the ones without feeds, including Sovrn, Skimlinks, and independent publishers.</p>
       </div>
       <div class="usecase-card">
-        <div class="usecase-icon">&#x1F3ED;</div>
-        <h3>B2B Procurement &amp; Supply Chain</h3>
-        <p>Source components from niche industrial suppliers, farm equipment distributors, or specialty wholesalers. Most B2B suppliers have product pages but no API &mdash; ShopGraph structures their catalog data.</p>
+        <h3>B2B Procurement and Supply Chain</h3>
+        <p>Source components from niche industrial suppliers, farm equipment distributors, or specialty wholesalers. Most B2B suppliers have product pages but no API. ShopGraph structures their catalog data.</p>
       </div>
       <div class="usecase-card">
-        <div class="usecase-icon">&#x267B;&#xFE0F;</div>
-        <h3>Second-hand &amp; Circular Economy</h3>
+        <h3>Second-hand and Circular Economy</h3>
         <p>Track resale prices across ThredUp, Poshmark, BackMarket, and independent consignment shops. Structured listings with price, condition, and availability.</p>
       </div>
       <div class="usecase-card">
-        <div class="usecase-icon">&#x1F3E5;</div>
-        <h3>Healthcare &amp; Life Sciences</h3>
+        <h3>Healthcare and Life Sciences</h3>
         <p>Compare medical devices, lab equipment, and pharma supplies across specialty distributors like Fisher Scientific, Henry Schein, and niche manufacturers.</p>
       </div>
     </div>
   </div>
 </section>
 
+<!-- Product Pages Tested (Quality Dashboard) -->
+${dashboardHTML}
+
 <!-- Tools -->
-<section class="section section-alt">
+<section class="section">
   <div class="container">
-    <div class="section-header">
-      <h2>Tools</h2>
-      <p>Two extraction modes, priced by complexity.</p>
-    </div>
+    
 
     <div class="tools-grid">
       <div class="tool-card">
@@ -464,109 +564,12 @@ ${dashboardHTML}
     </div>
 
     <div class="cache-note">
-      <div class="icon">&#x2728;</div>
       <p><strong>Cached results (within 24 hours) are free.</strong> Failed extractions are not charged.</p>
     </div>
   </div>
 </section>
 
-<!-- How It Works -->
-<section class="section">
-  <div class="container">
-    <div class="section-header">
-      <h2>How It Works</h2>
-    </div>
-
-    <div class="steps-grid">
-      <div class="step">
-        <div class="step-number">1</div>
-        <h3>Send a URL</h3>
-        <p>Your agent sends any product URL to ShopGraph via MCP.</p>
-      </div>
-      <div class="step">
-        <div class="step-number">2</div>
-        <h3>Extract Data</h3>
-        <p>Schema.org parsing first. If markup is missing, Gemini LLM extracts from raw page content.</p>
-      </div>
-      <div class="step">
-        <div class="step-number">3</div>
-        <h3>Get Structured JSON</h3>
-        <p>Clean data with confidence scores. Cached for 24 hours for free repeat access.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Extracted Data -->
-
-<section class="section section-alt">
-  <div class="container">
-    <div class="section-header">
-      <h2>Extracted Data</h2>
-      <p>Every field includes a confidence score so your agent knows how much to trust it.</p>
-    </div>
-
-    <div class="data-grid">
-      <div class="data-field"><span class="icon">🏷️</span><div><span class="label">name</span><span class="meta">Product title</span></div></div>
-      <div class="data-field"><span class="icon">🏢</span><div><span class="label">brand</span><span class="meta">Manufacturer</span></div></div>
-      <div class="data-field"><span class="icon">💰</span><div><span class="label">price</span><span class="meta">Current price + currency</span></div></div>
-      <div class="data-field"><span class="icon">📦</span><div><span class="label">availability</span><span class="meta">InStock / OutOfStock</span></div></div>
-      <div class="data-field"><span class="icon">📂</span><div><span class="label">categories</span><span class="meta">Product taxonomy</span></div></div>
-      <div class="data-field"><span class="icon">🖼️</span><div><span class="label">images</span><span class="meta">Product image URLs</span></div></div>
-      <div class="data-field"><span class="icon">🎨</span><div><span class="label">colors</span><span class="meta">Available colors</span></div></div>
-      <div class="data-field"><span class="icon">🧵</span><div><span class="label">materials</span><span class="meta">Fabric, metal, etc.</span></div></div>
-      <div class="data-field"><span class="icon">📐</span><div><span class="label">dimensions</span><span class="meta">Size / measurements</span></div></div>
-    </div>
-  </div>
-</section>
-
-<!-- Integration -->
-
-<!-- Works With -->
-<section class="section" style="background:#f8f9fa">
-  <div class="container">
-    <div class="section-header">
-      <h2>Works With</h2>
-      <p>Any MCP-compatible client can connect to ShopGraph.</p>
-    </div>
-    <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:800px;margin:0 auto">
-      <span style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#fff;border:1px solid #dadce0;border-radius:40px;font-size:0.95em;font-weight:500;color:#202124">✦ Claude</span>
-      <span style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#fff;border:1px solid #dadce0;border-radius:40px;font-size:0.95em;font-weight:500;color:#202124">✦ Claude Code</span>
-      <span style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#fff;border:1px solid #dadce0;border-radius:40px;font-size:0.95em;font-weight:500;color:#202124">⚡ Cursor</span>
-      <span style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#fff;border:1px solid #dadce0;border-radius:40px;font-size:0.95em;font-weight:500;color:#202124">🌊 Windsurf</span>
-      <span style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#fff;border:1px solid #dadce0;border-radius:40px;font-size:0.95em;font-weight:500;color:#202124">◆ OpenAI</span>
-      <span style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#fff;border:1px solid #dadce0;border-radius:40px;font-size:0.95em;font-weight:500;color:#202124">⚙ CrewAI</span>
-      <span style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#fff;border:1px solid #dadce0;border-radius:40px;font-size:0.95em;font-weight:500;color:#202124">⚡ LangGraph</span>
-      <span style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#fff;border:1px solid #dadce0;border-radius:40px;font-size:0.95em;font-weight:500;color:#202124">🔄 AutoGen</span>
-      <span style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#fff;border:1px solid #dadce0;border-radius:40px;font-size:0.95em;font-weight:500;color:#202124">🐍 Any MCP Client</span>
-    </div>
-  </div>
-</section>
-<section class="section">
-  <div class="container">
-    <div class="section-header">
-      <h2>Integration</h2>
-      <p>Connect any MCP-compatible client. Pay per call via Stripe Machine Payments Protocol.</p>
-    </div>
-
-    <div class="integration-block">
-      <p style="margin-bottom:4px;font-weight:500;color:#202124">Connect your MCP client:</p>
-      <pre>{
-  "mcpServers": {
-    "shopgraph": {
-      "type": "url",
-      "url": "https://shopgraph.dev/mcp"
-    }
-  }
-}</pre>
-    </div>
-
-    <div class="cache-note" style="margin-top:32px">
-      <div class="icon">💳</div>
-      <p>No API keys needed for discovery. Payment handled via <strong>Stripe MPP</strong> — your agent pays per call using a Stripe-issued token. No subscriptions, no minimums.</p>
-    </div>
-  </div>
-</section>
+</main>
 
 <div class="gradient-line" style="display:none"></div>
 
@@ -581,6 +584,7 @@ const landingHTML = buildLandingHTML(qualityDashboardHTML);
 const tosHTML = pageShell('Terms of Service — ShopGraph', `
 ${nav}
 
+<main>
 <div class="legal-content">
   <a href="/" class="back-link">&larr; Back to ShopGraph</a>
   <h1>Terms of Service</h1>
@@ -625,6 +629,7 @@ ${nav}
 
   <div class="gradient-line" style="display:none"></div>
 </div>
+</main>
 
 ${footer}
 `);
@@ -633,6 +638,7 @@ ${footer}
 const privacyHTML = pageShell('Privacy Policy — ShopGraph', `
 ${nav}
 
+<main>
 <div class="legal-content">
   <a href="/" class="back-link">&larr; Back to ShopGraph</a>
   <h1>Privacy Policy</h1>
@@ -671,6 +677,7 @@ ${nav}
 
   <div class="gradient-line" style="display:none"></div>
 </div>
+</main>
 
 ${footer}
 `);
