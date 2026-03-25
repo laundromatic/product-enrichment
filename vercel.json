@@ -2,7 +2,6 @@
   "version": 2,
   "buildCommand": "npm run build",
   "installCommand": "npm install",
-  "outputDirectory": ".",
   "framework": null,
   "functions": {
     "api/index.ts": {
@@ -11,9 +10,18 @@
     }
   },
   "rewrites": [
-    { "source": "/health", "destination": "/api" },
-    { "source": "/mcp", "destination": "/api" },
-    { "source": "/api/:path*", "destination": "/api" }
+    {
+      "source": "/health",
+      "destination": "/api"
+    },
+    {
+      "source": "/mcp",
+      "destination": "/api"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "/api"
+    }
   ],
   "cleanUrls": true,
   "crons": [
