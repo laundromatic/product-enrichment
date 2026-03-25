@@ -11,7 +11,12 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { createServer } from '../src/server.js';
 import { EnrichmentCache } from '../src/cache.js';
 import { PaymentManager } from '../src/payments.js';
-import { getDashboardStats } from '../src/stats.js';
+import { getDashboardStats, getDashboardStatsAsync } from '../src/stats.js';
+import { runDailyTests } from '../src/test-runner.js';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const testCorpus = require('../data/test-corpus.json') as Array<{ url: string; vertical: string; added: string }>;
 
 const app = express();
 app.use(express.json());
@@ -220,8 +225,7 @@ const footer = `<footer class="footer-section">
 </footer>`;
 
 // ---- Quality Dashboard ----
-function buildQualityDashboard(): string {
-  const stats = getDashboardStats();
+function buildQualityDashboard(stats: ReturnType<typeof getDashboardStats>): string {
   const rows = stats.verticals
     .map(v => `          <tr style="border-bottom:1px solid #f1f3f4">
             <td style="padding:10px 12px;color:#202124;font-weight:500">${v.name}</td>
@@ -275,10 +279,12 @@ ${rows}
 </section>`;
 }
 
-const qualityDashboardHTML = buildQualityDashboard();
+// Pre-build baseline version for sync fallback
+const qualityDashboardHTML = buildQualityDashboard(getDashboardStats());
 
 // ---- Landing Page ----
-const landingHTML = pageShell('ShopGraph — Structured Product Data for AI Agents', `
+function buildLandingHTML(dashboardHTML: string): string {
+  return pageShell('ShopGraph — Structured Product Data for AI Agents', `
 ${nav}
 
 <!-- Hero -->
@@ -297,7 +303,7 @@ ${nav}
 </section>
 
 <!-- Quality Dashboard -->
-${qualityDashboardHTML}
+${dashboardHTML}
 
 <!-- What It Does -->
 <section class="section">
@@ -485,6 +491,10 @@ ${qualityDashboardHTML}
 
 ${footer}
 `, `<meta name="description" content="Structured product data extraction for AI agents. Product data where platform APIs don't reach. MCP server with Schema.org and LLM extraction.">`);
+}
+
+// Pre-built landing page with baseline stats (used as sync fallback)
+const landingHTML = buildLandingHTML(qualityDashboardHTML);
 
 // ---- Terms of Service ----
 const tosHTML = pageShell('Terms of Service — ShopGraph', `
@@ -607,9 +617,16 @@ app.get('/health', (_req, res) => {
   });
 });
 
-// Landing page
-app.get('/', (_req, res) => {
-  res.type('html').send(landingHTML);
+// Landing page — serves live stats from KV when available
+app.get('/', async (_req, res) => {
+  try {
+    const stats = await getDashboardStatsAsync();
+    const dashHTML = buildQualityDashboard(stats);
+    res.type('html').send(buildLandingHTML(dashHTML));
+  } catch {
+    // Fallback to pre-built baseline
+    res.type('html').send(landingHTML);
+  }
 });
 
 // Terms of Service
@@ -622,18 +639,39 @@ app.get('/privacy', (_req, res) => {
   res.type('html').send(privacyHTML);
 });
 
-// Stats API
-app.get('/api/stats', (_req, res) => {
-  res.json(getDashboardStats());
+// Stats API — reads from KV when available, falls back to baseline
+app.get('/api/stats', async (_req, res) => {
+  try {
+    const stats = await getDashboardStatsAsync();
+    res.json(stats);
+  } catch {
+    res.json(getDashboardStats());
+  }
 });
 
-// Cron: daily test runner (placeholder)
-app.get('/api/run-tests', (_req, res) => {
-  res.json({
-    status: 'ok',
-    message: 'Cron endpoint ready — daily testing not yet active.',
-    next: 'Will run test corpus against ShopGraph and update stats.',
-  });
+// Cron: daily test runner
+// Vercel cron sends GET with Authorization: Bearer <CRON_SECRET>
+// Also allow manual trigger for testing
+app.get('/api/run-tests', async (req, res) => {
+  // Verify cron secret if set (Vercel sets Authorization header for cron jobs)
+  const cronSecret = process.env.CRON_SECRET;
+  if (cronSecret) {
+    const authHeader = req.headers.authorization;
+    if (authHeader !== `Bearer ${cronSecret}`) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+  }
+
+  try {
+    const result = await runDailyTests(testCorpus);
+    res.json(result);
+  } catch (err: unknown) {
+    console.error('Test runner error:', err);
+    res.status(500).json({
+      error: 'Test runner failed',
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
 });
 
 // MCP endpoint
