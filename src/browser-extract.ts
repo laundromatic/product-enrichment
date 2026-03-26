@@ -1,6 +1,8 @@
 import type { ProductData } from './types.js';
 import { extractSchemaOrg } from './schema-org.js';
 import { extractWithLlm } from './llm-extract.js';
+import chromium from '@sparticuz/chromium';
+import { chromium as playwrightChromium } from 'playwright-core';
 
 const BROWSER_LAUNCH_TIMEOUT = 10_000;
 const PAGE_LOAD_TIMEOUT = 15_000;
@@ -22,20 +24,20 @@ function randomUserAgent(): string {
 }
 
 /**
- * Extract product data using a headless browser (Playwright).
+ * Extract product data using a headless browser (Playwright + @sparticuz/chromium).
  * This renders JS-heavy pages that return incomplete data via fetch().
  *
- * Requires: ENABLE_BROWSER_FALLBACK=true env var and playwright installed.
+ * Uses @sparticuz/chromium for Vercel/Lambda serverless compatibility.
+ * Requires: ENABLE_BROWSER_FALLBACK=true env var.
  */
 export async function extractWithBrowser(url: string): Promise<ProductData> {
-  // Dynamic import so Playwright is only loaded when actually needed
-  const { chromium } = await import('playwright');
-
   const now = new Date().toISOString();
   let browser;
 
   try {
-    browser = await chromium.launch({
+    browser = await playwrightChromium.launch({
+      args: chromium.args,
+      executablePath: await chromium.executablePath(),
       headless: true,
       timeout: BROWSER_LAUNCH_TIMEOUT,
     });
