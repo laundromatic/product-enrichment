@@ -2,6 +2,11 @@
  * Test runner for the daily cron job.
  * Reads test corpus, runs extraction on a batch of URLs,
  * stores results in Upstash Redis, and recalculates aggregate stats.
+ *
+ * Self-healing features:
+ * - Circuit breaker: auto-quarantines URLs with 3+ consecutive failures
+ * - Health alerts: logs to KV + fires webhook when success rate drops
+ * - Corpus verification: periodically re-verifies all URLs
  */
 
 import { extractProduct } from './extract.js';
@@ -20,16 +25,35 @@ import {
   writeLastBatch,
   hashUrl,
 } from './stats.js';
+import {
+  recordSuccess,
+  recordFailure,
+  filterQuarantined,
+} from './circuit-breaker.js';
+import {
+  storeAlert,
+  recordCronRun,
+  recordVerifyRun,
+  fireWebhookAlert,
+  ALERT_THRESHOLD,
+} from './health.js';
+import { verifyUrl } from './verify-url.js';
 
 // Import test corpus type
-interface CorpusEntry {
+export interface CorpusEntry {
   url: string;
   vertical: string;
   added: string;
 }
 
-const BATCH_SIZE = 12;
+export const BATCH_SIZE = 12;
 const EXTRACTION_TIMEOUT_MS = 15_000;
+
+/**
+ * How often to run a verification pass instead of normal extraction.
+ * Every 14 batches (~7 hours at 30-min cron = roughly weekly at 48 batches/day).
+ */
+const VERIFY_INTERVAL = BATCH_SIZE * 14;
 
 /**
  * Extract a single URL with a timeout.
@@ -108,7 +132,7 @@ async function runBatch(entries: CorpusEntry[]): Promise<BatchResult[]> {
  * Recalculate aggregate stats from all stored individual results.
  * Merges new batch results with existing stats.
  */
-function recalculateStats(
+export function recalculateStats(
   existingStats: DashboardStats,
   batchResults: BatchResult[],
 ): DashboardStats {
@@ -188,6 +212,46 @@ function recalculateStats(
 }
 
 /**
+ * Run a corpus verification pass instead of normal extraction.
+ * Checks each URL in a batch for HTTP reachability and extraction success.
+ * Quarantines URLs that fail.
+ */
+async function runVerificationPass(
+  corpus: CorpusEntry[],
+  redis: import('@upstash/redis').Redis,
+): Promise<{ verified: number; quarantined: number; passed: number }> {
+  // Verify a batch of URLs (use same BATCH_SIZE to stay within time limits)
+  const batch = corpus.slice(0, BATCH_SIZE);
+  let quarantined = 0;
+  let passed = 0;
+
+  for (let i = 0; i < batch.length; i += CONCURRENCY) {
+    const chunk = batch.slice(i, i + CONCURRENCY);
+    const results = await Promise.all(
+      chunk.map(async (entry) => {
+        const result = await verifyUrl(entry.url);
+        return { entry, result };
+      }),
+    );
+
+    for (const { entry, result } of results) {
+      if (!result.valid) {
+        // Record as failure (will quarantine at 3 consecutive)
+        await recordFailure(redis, entry.url, result.reason ?? 'verification failed');
+        quarantined++;
+      } else {
+        passed++;
+      }
+    }
+  }
+
+  await recordVerifyRun(redis);
+  console.log(`[verify] Verified ${batch.length} URLs: ${passed} passed, ${quarantined} failed`);
+
+  return { verified: batch.length, quarantined, passed };
+}
+
+/**
  * Main entry point for the daily test cron.
  * Returns a summary suitable for the API response.
  */
@@ -197,6 +261,8 @@ export async function runDailyTests(corpus: CorpusEntry[]): Promise<{
   batch_size: number;
   results_summary: { tested: number; successful: number; success_rate: number; avg_confidence: number };
   kv_updated: boolean;
+  quarantined_this_batch: number;
+  verification_pass?: { verified: number; quarantined: number; passed: number };
 }> {
   const redis = getRedis();
 
@@ -206,15 +272,56 @@ export async function runDailyTests(corpus: CorpusEntry[]): Promise<{
     offset = await getBatchOffset(redis);
   }
 
+  // Check if this should be a verification pass instead of extraction
+  const shouldVerify = redis && offset > 0 && offset % VERIFY_INTERVAL === 0;
+
+  if (shouldVerify && redis) {
+    const verifyResult = await runVerificationPass(corpus, redis);
+    await recordCronRun(redis);
+
+    // Advance offset past this verification slot
+    const nextOffset = (offset + BATCH_SIZE) % corpus.length;
+    await setBatchOffset(redis, nextOffset);
+
+    return {
+      status: 'ok',
+      batch_offset: offset,
+      batch_size: 0,
+      results_summary: { tested: 0, successful: 0, success_rate: 0, avg_confidence: 0 },
+      kv_updated: true,
+      quarantined_this_batch: verifyResult.quarantined,
+      verification_pass: verifyResult,
+    };
+  }
+
+  // Filter out quarantined URLs before picking batch
+  let activeCorpus = corpus;
+  if (redis) {
+    activeCorpus = await filterQuarantined(redis, corpus);
+  }
+
   // Pick next batch, wrapping around
   const batchEntries: CorpusEntry[] = [];
-  for (let i = 0; i < BATCH_SIZE && i < corpus.length; i++) {
-    const idx = (offset + i) % corpus.length;
-    batchEntries.push(corpus[idx]);
+  for (let i = 0; i < BATCH_SIZE && i < activeCorpus.length; i++) {
+    const idx = (offset + i) % activeCorpus.length;
+    batchEntries.push(activeCorpus[idx]);
   }
 
   // Run extractions
   const results = await runBatch(batchEntries);
+
+  // Circuit breaker: track failures and quarantine bad URLs
+  let quarantinedThisBatch = 0;
+  if (redis) {
+    for (const r of results) {
+      if (r.success) {
+        await recordSuccess(redis, r.url);
+      } else {
+        const wasQuarantined = await recordFailure(redis, r.url, r.error);
+        if (wasQuarantined) quarantinedThisBatch++;
+      }
+    }
+  }
 
   // Calculate batch summary
   const successful = results.filter(r => r.success).length;
@@ -259,6 +366,15 @@ export async function runDailyTests(corpus: CorpusEntry[]): Promise<{
       // Write updated stats
       await writeStats(redis, updatedStats);
 
+      // Health assessment: store alert + fire webhook if degraded
+      await storeAlert(redis, updatedStats.overall_success_rate, offset);
+      if (updatedStats.overall_success_rate < ALERT_THRESHOLD) {
+        await fireWebhookAlert(updatedStats.overall_success_rate);
+      }
+
+      // Record cron run timestamp
+      await recordCronRun(redis);
+
       // Write last batch info
       const lastBatch: LastBatch = {
         date: new Date().toISOString(),
@@ -270,7 +386,7 @@ export async function runDailyTests(corpus: CorpusEntry[]): Promise<{
       await writeLastBatch(redis, lastBatch);
 
       // Advance batch offset
-      const nextOffset = (offset + BATCH_SIZE) % corpus.length;
+      const nextOffset = (offset + BATCH_SIZE) % activeCorpus.length;
       await setBatchOffset(redis, nextOffset);
 
       kvUpdated = true;
@@ -285,5 +401,6 @@ export async function runDailyTests(corpus: CorpusEntry[]): Promise<{
     batch_size: results.length,
     results_summary: summary,
     kv_updated: kvUpdated,
+    quarantined_this_batch: quarantinedThisBatch,
   };
 }

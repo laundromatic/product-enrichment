@@ -116,6 +116,9 @@ ul,ol{padding-left:24px}
 </style>
 </head>
 <body>
+<div id="health-banner" style="display:none;background:#fef7e0;border-bottom:1px solid #f9ab00;padding:10px 24px;text-align:center;font-size:.9em;color:#594300">
+  <span id="health-banner-text"></span>
+</div>
 <nav class="nav">
   <div class="nav-inner">
     <a href="/" class="nav-logo"><img src="/icon.png" alt="ShopGraph" style="width:28px;height:28px;border-radius:6px;vertical-align:middle;margin-right:8px">ShopGraph</a>
@@ -494,6 +497,24 @@ ul,ol{padding-left:24px}
       // If stats fetch fails, show fallback
       document.getElementById('counter').textContent = '-';
     });
+
+  // Fetch health check and show banner if degraded/critical
+  fetch('/api/health-check')
+    .then(function(r){ return r.json(); })
+    .then(function(health){
+      if (health.status === 'degraded' || health.status === 'critical') {
+        var banner = document.getElementById('health-banner');
+        var text = document.getElementById('health-banner-text');
+        if (health.status === 'critical') {
+          banner.style.background = '#fce8e6';
+          banner.style.borderColor = '#d93025';
+          banner.style.color = '#611a15';
+        }
+        text.textContent = 'System maintenance in progress. Some product pages may return limited results. (Success rate: ' + health.success_rate + '%)';
+        banner.style.display = 'block';
+      }
+    })
+    .catch(function(){});
 })();
 </script>
 </body>
