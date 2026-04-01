@@ -2,7 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { ProductData, EnrichmentResult, MppChallenge } from './types.js';
 import { TOOL_PRICING, FREE_TIER } from './types.js';
-import { extractProduct, extractFromRawHtml } from './extract.js';
+import { extractProduct, extractFromRawHtml, extractBasicFromUrl } from './extract.js';
 import { EnrichmentCache } from './cache.js';
 import { PaymentManager } from './payments.js';
 import { FreeTierTracker } from './free-tier.js';
@@ -105,7 +105,7 @@ export function createServer(
         text: JSON.stringify({
           tools: {
             enrich_product: { price_usd: 0.02, description: 'Full extraction with all attributes and images' },
-            enrich_basic: { price_usd: 0.01, description: 'Basic attributes only (name, price, brand, availability)' },
+            enrich_basic: { price_usd: 0.01, description: 'Schema.org extraction only (fast, zero LLM cost). Free: 200 calls/month.' },
             enrich_html: { price_usd: 0.02, description: 'Extract from raw HTML (bring your own scraper). Full extraction.' },
           },
           free_tier: {
@@ -151,10 +151,10 @@ async function handleEnrichment(
   if (!paymentMethodId && isFreeTierEligible) {
     const usage = tracker.getUsage(clientId);
     if (usage < FREE_TIER.MONTHLY_LIMIT) {
-      // Free tier: proceed without payment
+      // Free tier: Schema.org only (zero API cost)
       let product: ProductData;
       try {
-        product = await extractProduct(url);
+        product = await extractBasicFromUrl(url);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Extraction failed';
         return {
@@ -163,17 +163,14 @@ async function handleEnrichment(
         };
       }
 
-      if (toolName === 'enrich_basic') {
-        product.image_urls = [];
-        product.primary_image_url = null;
-      }
-
+      const hasData = product.product_name !== null;
       tracker.increment(clientId);
       cache.set(url, product);
-      const result: EnrichmentResult & { free_tier: { used: number; limit: number } } = {
+      const result: EnrichmentResult & { free_tier: { used: number; limit: number }; upgrade_hint?: string } = {
         product,
         cached: false,
         free_tier: { used: usage + 1, limit: FREE_TIER.MONTHLY_LIMIT },
+        ...(hasData ? {} : { upgrade_hint: 'No Schema.org data found on this page. Use enrich_product ($0.02) for LLM-powered extraction.' }),
       };
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     }
@@ -213,18 +210,17 @@ async function handleEnrichment(
 
   let product: ProductData;
   try {
-    product = await extractProduct(url);
+    // enrich_basic uses Schema.org only (even when paid — consistent behavior)
+    // enrich_product uses full pipeline (Schema.org → LLM → browser fallback)
+    product = toolName === 'enrich_basic'
+      ? await extractBasicFromUrl(url)
+      : await extractProduct(url);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Extraction failed';
     return {
       content: [{ type: 'text' as const, text: JSON.stringify({ error: 'extraction_failed', message, receipt }, null, 2) }],
       isError: true,
     };
-  }
-
-  if (toolName === 'enrich_basic') {
-    product.image_urls = [];
-    product.primary_image_url = null;
   }
 
   cache.set(url, product);

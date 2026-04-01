@@ -14,6 +14,9 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { createServer } from '../src/server.js';
 import { EnrichmentCache } from '../src/cache.js';
 import { PaymentManager } from '../src/payments.js';
+import { FreeTierTracker } from '../src/free-tier.js';
+import { extractProduct, extractFromRawHtml, extractBasicFromUrl } from '../src/extract.js';
+import { TOOL_PRICING, FREE_TIER } from '../src/types.js';
 import { getDashboardStats, getDashboardStatsAsync } from '../src/stats.js';
 import { runDailyTests } from '../src/test-runner.js';
 import { runHealthCheck } from '../src/health.js';
@@ -27,6 +30,7 @@ const app = express();
 app.use(express.json());
 
 const cache = new EnrichmentCache();
+const freeTier = new FreeTierTracker();
 
 function getPayments() {
   return new PaymentManager(
@@ -46,6 +50,12 @@ app.get('/health', (_req, res) => {
     version: '1.0.0',
     runtime: 'vercel-serverless',
     tools: ['enrich_product', 'enrich_basic', 'enrich_html'],
+    api: {
+      'POST /api/enrich/basic': 'Schema.org only — 200 free calls/month',
+      'POST /api/enrich': 'Full extraction (Schema.org → LLM) — $0.02/call',
+      'POST /api/enrich/html': 'Extract from raw HTML — $0.02/call',
+    },
+    mcp: 'POST /mcp',
     free_tier: '200 enrich_basic calls/month — no payment required',
   });
 });
@@ -124,6 +134,155 @@ app.get('/api/run-tests', async (req, res) => {
       error: 'Test runner failed',
       message: err instanceof Error ? err.message : String(err),
     });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// REST API — primary distribution surface
+// ---------------------------------------------------------------------------
+
+// POST /api/enrich/basic — Schema.org only, free tier eligible
+app.post('/api/enrich/basic', async (req, res) => {
+  const { url } = req.body ?? {};
+  if (!url || typeof url !== 'string') {
+    return res.status(400).json({ error: 'Missing required field: url' });
+  }
+
+  try {
+    new URL(url);
+  } catch {
+    return res.status(400).json({ error: 'Invalid URL format' });
+  }
+
+  // Check cache first
+  const cached = cache.get(url);
+  if (cached) {
+    return res.json({ product: { ...cached, image_urls: [], primary_image_url: null }, cached: true });
+  }
+
+  // Free tier: track by IP
+  const clientId = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || 'anonymous';
+  const usage = freeTier.getUsage(clientId);
+
+  if (usage >= FREE_TIER.MONTHLY_LIMIT) {
+    return res.status(429).json({
+      error: 'free_tier_exhausted',
+      used: usage,
+      limit: FREE_TIER.MONTHLY_LIMIT,
+      message: `Free tier limit reached (${FREE_TIER.MONTHLY_LIMIT}/month). Use enrich_product ($0.02) for paid access, or wait for next month.`,
+      upgrade: { tool: 'enrich_product', price_usd: 0.02, endpoint: '/api/enrich' },
+    });
+  }
+
+  try {
+    const product = await extractBasicFromUrl(url);
+    freeTier.increment(clientId);
+    cache.set(url, product);
+
+    const hasData = product.product_name !== null;
+    res.json({
+      product,
+      cached: false,
+      free_tier: { used: usage + 1, limit: FREE_TIER.MONTHLY_LIMIT },
+      ...(hasData ? {} : {
+        upgrade_hint: 'No Schema.org data found. Use /api/enrich ($0.02) for LLM-powered extraction.',
+      }),
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Extraction failed';
+    res.status(500).json({ error: 'extraction_failed', message });
+  }
+});
+
+// POST /api/enrich — Full extraction (Schema.org → LLM → browser fallback)
+app.post('/api/enrich', async (req, res) => {
+  const { url, payment_method_id } = req.body ?? {};
+  if (!url || typeof url !== 'string') {
+    return res.status(400).json({ error: 'Missing required field: url' });
+  }
+
+  try {
+    new URL(url);
+  } catch {
+    return res.status(400).json({ error: 'Invalid URL format' });
+  }
+
+  const cached = cache.get(url);
+  if (cached) {
+    return res.json({ product: cached, cached: true });
+  }
+
+  if (!payment_method_id) {
+    const payments = getPayments();
+    return res.status(402).json({
+      error: 'payment_required',
+      status: 402,
+      challenge: payments.createChallenge('enrich_product'),
+      message: 'Payment required. Include payment_method_id in request body. Cost: $0.02',
+      free_alternative: { endpoint: '/api/enrich/basic', description: 'Schema.org only, 200 free calls/month' },
+    });
+  }
+
+  const payments = getPayments();
+  let receipt;
+  try {
+    receipt = await payments.processPayment('enrich_product', payment_method_id);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Payment processing failed';
+    return res.status(402).json({ error: 'payment_failed', message });
+  }
+
+  try {
+    const product = await extractProduct(url);
+    cache.set(url, product);
+    res.json({ product, receipt, cached: false });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Extraction failed';
+    res.status(500).json({ error: 'extraction_failed', message, receipt });
+  }
+});
+
+// POST /api/enrich/html — Full extraction from raw HTML
+app.post('/api/enrich/html', async (req, res) => {
+  const { html, url, payment_method_id } = req.body ?? {};
+  if (!html || typeof html !== 'string') {
+    return res.status(400).json({ error: 'Missing required field: html' });
+  }
+  if (!url || typeof url !== 'string') {
+    return res.status(400).json({ error: 'Missing required field: url (original page URL for context)' });
+  }
+
+  const cached = cache.get(url);
+  if (cached) {
+    return res.json({ product: cached, cached: true });
+  }
+
+  if (!payment_method_id) {
+    const payments = getPayments();
+    return res.status(402).json({
+      error: 'payment_required',
+      status: 402,
+      challenge: payments.createChallenge('enrich_html'),
+      message: 'Payment required. Include payment_method_id in request body. Cost: $0.02',
+    });
+  }
+
+  const payments = getPayments();
+  let receipt;
+  try {
+    receipt = await payments.processPayment('enrich_html', payment_method_id);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Payment processing failed';
+    return res.status(402).json({ error: 'payment_failed', message });
+  }
+
+  try {
+    const product = await extractFromRawHtml(html, url);
+    cache.set(url, product);
+    res.json({ product, receipt, cached: false });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Extraction failed';
+    res.status(500).json({ error: 'extraction_failed', message, receipt });
   }
 });
 

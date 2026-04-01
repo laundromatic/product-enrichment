@@ -74,6 +74,64 @@ export async function extractFromRawHtml(html: string, url: string): Promise<Pro
 }
 
 /**
+ * Schema.org-only extraction (no LLM fallback). Used by enrich_basic free tier.
+ * Fast, zero API cost. Returns empty fields if no Schema.org data found.
+ */
+export async function extractBasicFromUrl(url: string): Promise<ProductData> {
+  const html = await fetchPage(url);
+  return extractSchemaOnly(html, url);
+}
+
+/**
+ * Schema.org-only extraction from raw HTML. Used by enrich_basic via REST.
+ */
+export function extractSchemaOnly(html: string, url: string): ProductData {
+  const now = new Date().toISOString();
+  const schemaResult = extractSchemaOrg(html);
+
+  if (schemaResult && schemaResult.product_name) {
+    return {
+      url,
+      extracted_at: now,
+      extraction_method: 'schema_org',
+      product_name: schemaResult.product_name ?? null,
+      brand: schemaResult.brand ?? null,
+      description: schemaResult.description ?? null,
+      price: schemaResult.price ?? null,
+      availability: schemaResult.availability ?? 'unknown',
+      categories: schemaResult.categories ?? [],
+      image_urls: [],
+      primary_image_url: null,
+      color: schemaResult.color ?? [],
+      material: schemaResult.material ?? [],
+      dimensions: schemaResult.dimensions ?? null,
+      schema_org_raw: schemaResult.schema_org_raw ?? null,
+      confidence: schemaResult.confidence ?? { overall: 0, per_field: {} },
+    };
+  }
+
+  // No Schema.org data found — return empty result with upgrade hint
+  return {
+    url,
+    extracted_at: now,
+    extraction_method: 'schema_org',
+    product_name: null,
+    brand: null,
+    description: null,
+    price: null,
+    availability: 'unknown',
+    categories: [],
+    image_urls: [],
+    primary_image_url: null,
+    color: [],
+    material: [],
+    dimensions: null,
+    schema_org_raw: null,
+    confidence: { overall: 0, per_field: {} },
+  };
+}
+
+/**
  * Extract product data from HTML fetched via fetch().
  * This is the original extraction path (schema.org → LLM).
  */
