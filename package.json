@@ -1,9 +1,27 @@
 {
-  "name": "@laundromatic/shopgraph",
+  "name": "shopgraph",
   "version": "1.0.0",
-  "description": "MCP server for product data enrichment with Stripe MPP payments",
+  "description": "Product data structuring layer for AI agents. REST API + MCP server. Send a URL or raw HTML, get structured product data with confidence scores.",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/client.js",
+  "types": "dist/client.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/client.js",
+      "types": "./dist/client.d.ts"
+    },
+    "./server": {
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist/client.js",
+    "dist/client.d.ts",
+    "dist/types.js",
+    "dist/types.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
@@ -11,16 +29,28 @@
     "dev": "tsx src/index.ts",
     "dev:http": "tsx src/http-server.ts",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
-    "mcp",
     "shopgraph",
-    "stripe",
-    "mpp"
+    "product-data",
+    "mcp",
+    "mcp-server",
+    "agent-commerce",
+    "ecommerce",
+    "structured-data",
+    "schema-org",
+    "web-scraping",
+    "stripe-mpp",
+    "ai-agents"
   ],
   "license": "Apache-2.0",
-  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/laundromatic/shopgraph.git"
+  },
+  "homepage": "https://shopgraph.dev",
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
     "@modelcontextprotocol/sdk": "^1.8.0",
