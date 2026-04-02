@@ -12,145 +12,149 @@
 <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Code&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{background:#fff;color:#000;font-family:'Google Sans Flex',system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body{background:#fff;color:#000;font-family:'Google Sans Flex',system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 a{color:inherit;text-decoration:none}
-a:hover{text-decoration:underline}
-code{font-family:'Google Sans Code',monospace;font-size:.9em}
+a:hover{opacity:.8}
 
-/* === PAGE WRAPPER WITH BACKGROUND === */
-.page-bg{position:relative;min-height:100vh}
-.page-bg::before{
-  content:'';position:fixed;top:-568px;left:0;width:100%;height:2485px;
-  background:url('/bg-laundromat.jpg') center top / cover no-repeat;
-  z-index:-2;
+.page{position:relative;width:100%;max-width:1792px;margin:0 auto;min-height:1920px}
+
+/* Background image */
+.page::before{
+  content:'';position:absolute;top:-568px;left:0;width:1792px;height:2485px;
+  background:url('/bg-laundromat.jpg') center top / 1792px auto no-repeat;
+  z-index:0;
+}
+
+/* Frosted overlay */
+.frosted-overlay{
+  position:absolute;top:904px;left:0;width:100%;height:928px;
+  background:rgba(255,255,255,0.75);z-index:1;
 }
 
 /* === NAV === */
-.nav{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:14px 40px}
-.nav-logo{font-size:16px;font-weight:900;color:#fff;letter-spacing:.5px;text-transform:uppercase}
-.nav-links{display:flex;gap:20px}
-.nav-links a{font-size:16px;font-weight:900;color:#fff;letter-spacing:.5px;text-transform:uppercase}
-.nav-links a:hover{text-decoration:none;opacity:.8}
+.nav{position:absolute;z-index:10;top:0;left:0;width:100%;display:flex;justify-content:space-between;align-items:center;padding:14px 0}
+.nav-logo{position:absolute;left:256px;top:21px;font-size:16px;font-weight:900;color:#fff;letter-spacing:.5px}
+.nav-right{position:absolute;right:127px;top:14px;display:flex;gap:24px}
+.nav-right a{font-size:16px;font-weight:900;color:#fff;letter-spacing:.5px;line-height:24px}
 
-/* === HERO === */
-.hero{position:relative;z-index:1;padding:60px 40px 0;display:flex;gap:28px;max-width:1400px;margin:0 auto;align-items:flex-start}
+/* === HERO BRAND CARD === */
 .hero-brand{
+  position:absolute;z-index:2;left:256px;top:207px;width:390px;height:309px;
   background:rgba(116,54,45,0.75);border-radius:40px;
-  padding:56px 36px 53px 44px;width:390px;flex-shrink:0;
-  color:#fff;
+  padding:56px 36px 53px 44px;color:#fff;
 }
-.hero-brand-name{font-size:24px;font-weight:900;letter-spacing:.5px;margin-bottom:2px}
-.hero-brand-sub{font-size:28px;font-weight:500;line-height:42px}
+.hero-brand-name{font-size:24px;font-weight:900;letter-spacing:.5px}
+.hero-brand-sub{font-size:28px;font-weight:500;line-height:42px;margin-top:2px}
+
+/* === PLAYGROUND CARD === */
 .hero-playground{
+  position:absolute;z-index:2;left:674px;top:207px;width:794px;height:309px;
   background:rgba(255,255,255,0.75);border-radius:40px;
-  padding:32px 40px 36px;flex:1;max-width:560px;position:relative;
+  padding:0;
 }
-.hero-try{font-family:'Meow Script',cursive;font-size:86px;color:#74362d;line-height:1;margin-bottom:4px}
-.hero-desc{font-size:20px;font-weight:500;color:#000;margin-bottom:16px}
-.hero-radios{display:flex;gap:34px;margin-bottom:16px;align-items:center}
-.hero-radio{display:flex;align-items:center;gap:6px;font-size:16px;font-weight:500;color:#74362d;cursor:pointer}
-.hero-radio input[type="radio"]{accent-color:#74362d;width:20px;height:20px}
-.hero-input-row{display:flex;gap:8px}
-.hero-input{
-  flex:1;padding:14px 16px;border:1px solid #fff;border-radius:24px;
-  font-size:16px;font-family:inherit;outline:none;background:#fff;
+.pg-try{
+  position:absolute;left:18px;top:11px;
+  font-family:'Meow Script',cursive;font-size:86px;color:#74362d;line-height:1;
 }
-.hero-input:focus{border-color:#74362d}
-.hero-btn{
-  padding:16px 24px;background:#74362d;color:#fff;border:none;border-radius:16px;
-  font-size:16px;font-weight:500;font-family:inherit;cursor:pointer;white-space:nowrap;
+.pg-desc{
+  position:absolute;left:41px;top:121px;width:554px;
+  font-size:20px;font-weight:500;color:#000;
 }
-.hero-btn:hover{opacity:.9}
-.hero-btn:disabled{opacity:.6;cursor:not-allowed}
+.pg-radios{
+  position:absolute;left:32px;top:150px;display:flex;gap:34px;align-items:center;
+}
+.pg-radio{display:flex;align-items:center;gap:3px;font-size:16px;font-weight:500;color:#74362d;cursor:pointer}
+.pg-radio input[type="radio"]{accent-color:#74362d;width:24px;height:24px;margin:0}
+.pg-input{
+  position:absolute;left:43px;top:205px;width:581px;height:56px;
+  background:#fff;border:1px solid #fff;border-radius:24px;
+  padding:0 16px;font-size:16px;font-family:'Google Sans Flex',system-ui,sans-serif;
+  outline:none;line-height:56px;
+}
+.pg-input:focus{border-color:#74362d}
+.pg-btn{
+  position:absolute;left:638px;top:205px;height:56px;
+  background:#74362d;color:#fff;border:none;border-radius:16px;
+  padding:0 24px;font-size:16px;font-weight:500;font-family:'Google Sans Flex',system-ui,sans-serif;
+  cursor:pointer;line-height:56px;
+}
+.pg-btn:hover{opacity:.9}
+.pg-btn:disabled{opacity:.6}
+.pg-result{position:absolute;left:43px;top:270px;width:700px;z-index:5}
 
-/* Works With Bubble */
+/* === WORKS WITH BUBBLE === */
 .works-bubble{
-  position:absolute;top:20px;right:-90px;
-  width:196px;height:196px;
-  display:flex;align-items:center;justify-content:center;text-align:center;
-  color:#fff;font-size:14px;font-weight:400;padding:32px;line-height:1.3;
+  position:absolute;z-index:3;left:1340px;top:125px;width:196px;height:196px;
 }
-.works-bubble img.bubble-bg{position:absolute;inset:0;width:100%;height:100%;z-index:0}
-.works-bubble span{position:relative;z-index:1}
-
-/* === INTEGRATION SECTION (over photo) === */
-.integration-zone{
-  position:relative;z-index:1;padding:40px 40px 60px;
-  max-width:1400px;margin:0 auto;
-  display:flex;align-items:center;justify-content:center;gap:0;
-}
-.int-shape{
-  position:relative;width:320px;height:280px;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  text-align:center;padding:24px;
-}
-.int-shape img.shape-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:0}
-.int-shape .int-content{position:relative;z-index:1}
-.int-title{font-size:20px;font-weight:700;margin-bottom:12px}
-.int-code{font-family:'Google Sans Code',monospace;font-size:14px;line-height:1.5}
-.int-shape-dark .int-title,.int-shape-dark .int-code{color:#f7cccd}
-.int-center{width:380px;height:300px}
-.int-center .int-title{color:#000;font-size:20px;font-weight:700}
-.int-center .int-body{font-size:14px;font-weight:500;color:#000;margin-top:8px;line-height:1.5}
-.int-center .int-body strong{font-weight:700}
-
-/* === FROSTED OVERLAY === */
-.frosted{
-  position:relative;z-index:1;
-  background:rgba(255,255,255,0.75);
+.works-bubble img{position:absolute;inset:0;width:100%;height:100%}
+.works-bubble span{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  text-align:center;color:#000;font-size:16px;font-weight:400;padding:28px;line-height:1.3;
 }
 
-/* === WHERE IT FITS === */
-.where-section{padding:60px 40px 40px;max-width:1200px;margin:0 auto}
-.where-heading{font-size:48px;font-weight:400;text-align:center;margin-bottom:48px;color:#000}
+/* === INTEGRATION SHAPES === */
+.int-left{position:absolute;z-index:2;left:255px;top:579px}
+.int-left img.shape{width:372px;height:254px}
+.int-left .content{position:absolute;top:0;left:0;width:372px;height:254px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px}
+.int-right{position:absolute;z-index:2;left:1165px;top:579px}
+.int-right img.shape{width:372px;height:254px}
+.int-right .content{position:absolute;top:0;left:0;width:372px;height:254px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px}
+.int-center-shape{position:absolute;z-index:2;left:657px;top:579px}
+.int-center-shape img.shape{width:478px;height:254px}
+.int-center-shape .content{position:absolute;top:0;left:0;width:478px;height:254px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+.int-title{font-size:20px;font-weight:700;color:#f7cccd}
+.int-code{font-family:'Google Sans Code',monospace;font-size:14px;color:#f7cccd;text-align:center;line-height:1.5}
+.int-center-title{font-size:20px;font-weight:700;color:#000}
+.int-center-body{font-size:14px;font-weight:500;color:#000;line-height:1.5;margin-top:8px}
+.int-center-body strong{font-weight:700}
+
+/* === WHERE SECTION === */
+.where-heading{
+  position:absolute;z-index:2;left:0;top:958px;width:100%;text-align:center;
+  font-size:48px;font-weight:400;color:#000;
+}
 .where-heading strong{font-weight:900}
-.where-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:40px}
-.where-item h3{font-size:18px;font-weight:700;color:#000;margin-bottom:8px}
-.where-item p{font-size:16px;font-weight:500;color:#000;line-height:1.6}
+.where-col1{position:absolute;z-index:2;left:255px;top:1075px;width:368px}
+.where-col2{position:absolute;z-index:2;left:713px;top:1075px;width:368px}
+.where-col3{position:absolute;z-index:2;left:1169px;top:1075px;width:368px}
+.where-title{font-size:20px;font-weight:700;color:#000;margin-bottom:8px}
+.where-body{font-size:16px;font-weight:500;color:#000;line-height:24px}
 
-/* === DOTTED SEPARATOR === */
-.dot-separator{
-  display:flex;justify-content:center;gap:12px;padding:40px 0;flex-wrap:wrap;
+/* === DOTTED LINE === */
+.dot-line{
+  position:absolute;z-index:2;left:4px;top:1347px;width:1788px;
+  display:flex;justify-content:center;gap:10px;flex-wrap:wrap;
 }
-.dot-separator span{
-  width:12px;height:12px;border-radius:50%;display:inline-block;
-}
-.dot-green{background:#4a7c59}
-.dot-brown{background:#74362d}
+.dot-line span{width:12px;height:12px;border-radius:50%;display:inline-block}
+.dg{background:#4a7c59}
+.db{background:#74362d}
 
 /* === STATS === */
-.stats-section{padding:20px 40px 60px;max-width:1200px;margin:0 auto;text-align:center}
-.stats-headline{font-size:48px;font-weight:400;color:#000;margin-bottom:32px}
-.stats-headline strong{font-weight:900}
-.stats-row{display:flex;justify-content:center;gap:120px}
-.stat-item{text-align:center;cursor:pointer}
-.stat-item:hover{opacity:.8}
-.stat-number{font-size:48px;font-weight:900;color:#000}
-.stat-label{font-size:24px;font-weight:400;color:#000;margin-top:4px}
-.stat-desc{font-size:16px;font-weight:400;color:#000;margin-top:2px;max-width:280px}
+.stats-heading{
+  position:absolute;z-index:2;left:0;top:1409px;width:100%;text-align:center;
+  font-size:48px;font-weight:400;color:#000;
+}
+.stats-heading strong{font-weight:900}
+.stat-left{position:absolute;z-index:2;left:482px;top:1526px;width:344px;text-align:center;cursor:pointer}
+.stat-right{position:absolute;z-index:2;left:969px;top:1526px;width:344px;text-align:center;cursor:pointer}
+.stat-num{font-size:48px;font-weight:900;color:#000}
+.stat-label{font-size:24px;font-weight:500;color:#000;margin-top:4px}
+.stat-desc{font-size:16px;font-weight:400;color:#000;margin-top:2px;line-height:1.4}
 
 /* === FOOTER === */
-.footer{
-  position:relative;z-index:1;
-  background:rgba(255,255,255,0.75);
-  padding:32px 40px;
-  display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;
-  max-width:100%;
-}
-.footer-left{font-size:16px;color:#000}
+.footer-left{position:absolute;z-index:2;left:256px;top:1857px;font-size:16px;color:#000;line-height:1.6}
+.footer-left strong{font-weight:500}
 .footer-left a{text-decoration:underline}
-.footer-right{text-align:right;font-size:16px;font-weight:500;color:#000}
+.footer-right{position:absolute;z-index:2;right:256px;top:1857px;text-align:right;font-size:16px;font-weight:500;color:#000;line-height:25px}
 .footer-right a{color:#000}
-.footer-right a:hover{text-decoration:underline}
 
-/* === PLAYGROUND RESULT === */
-#playground-result{margin-top:16px}
-#playground-loading{text-align:center;padding:20px;color:#74362d}
-#playground-error{background:#fce8e6;border:1px solid #f5c6cb;border-radius:12px;padding:12px;color:#611a15;font-size:.9em}
-#playground-json{background:#1e1e2e;color:#cdd6f4;padding:16px;border-radius:12px;overflow-x:auto;font-size:.85em;font-family:'Google Sans Code',monospace;max-height:300px;overflow-y:auto;line-height:1.5}
-#playground-meta{font-size:.8em;color:#74362d;margin-top:8px}
+/* === RESULT / MODAL === */
+#playground-result{background:rgba(255,255,255,0.95);border-radius:12px;padding:12px;max-height:200px;overflow-y:auto}
+#playground-loading{text-align:center;padding:12px;color:#74362d}
+#playground-error{background:#fce8e6;border-radius:8px;padding:10px;color:#611a15;font-size:.85em}
+#playground-json{background:#1e1e2e;color:#cdd6f4;padding:12px;border-radius:8px;font-size:.8em;font-family:'Google Sans Code',monospace;max-height:180px;overflow-y:auto;line-height:1.4;white-space:pre-wrap;word-break:break-all}
+#playground-meta{font-size:.75em;color:#74362d;margin-top:4px}
 
-/* === STATS MODAL === */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;align-items:center;justify-content:center}
 .modal-overlay.active{display:flex}
 .modal-content{background:#fff;border-radius:16px;padding:32px;max-width:720px;width:90%;max-height:80vh;overflow-y:auto}
@@ -160,95 +164,80 @@ code{font-family:'Google Sans Code',monospace;font-size:.9em}
 .modal-content td{padding:10px 12px;border-bottom:1px solid #f1f3f4}
 
 @keyframes spin{to{transform:rotate(360deg)}}
-.spinner{display:inline-block;width:20px;height:20px;border:2px solid #f7cccd;border-top-color:#74362d;border-radius:50%;animation:spin .8s linear infinite}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid #f7cccd;border-top-color:#74362d;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:6px}
 
-/* === RESPONSIVE === */
-@media(max-width:900px){
-  .hero{flex-direction:column;padding:40px 20px 0}
-  .hero-brand{width:100%}
-  .hero-playground{max-width:100%}
-  .works-bubble{position:static;margin:16px auto;width:140px;height:140px}
-  .integration-zone{flex-direction:column;gap:20px;padding:40px 20px}
-  .int-shape,.int-center{width:100%;max-width:360px}
-  .where-grid{grid-template-columns:1fr}
-  .stats-row{flex-direction:column;gap:40px}
-  .footer{flex-direction:column;text-align:center}
-  .footer-right{text-align:center}
-  .where-heading{font-size:32px}
-  .stats-headline{font-size:32px}
+/* === RESPONSIVE (scale down) === */
+@media(max-width:1800px){
+  .page{transform-origin:top left;transform:scale(calc(100vw / 1792))}
 }
 </style>
 </head>
 <body>
-<div class="page-bg">
 
-<!-- Health Banner (hidden by default) -->
-<div id="health-banner" style="display:none;background:#fef7e0;border-bottom:1px solid #f9ab00;padding:10px 24px;text-align:center;font-size:.9em;color:#594300;position:relative;z-index:20">
-  <span id="health-banner-text"></span>
-</div>
+<div class="page">
+  <!-- Frosted overlay -->
+  <div class="frosted-overlay"></div>
 
-<!-- Nav -->
-<nav class="nav">
-  <a href="/" class="nav-logo">ShopGraph</a>
-  <div class="nav-links">
-    <a href="https://github.com/laundromatic/shopgraph">GitHub</a>
-    <a href="/health">Status</a>
-    <a href="/about">About</a>
+  <!-- Health Banner -->
+  <div id="health-banner" style="display:none;position:absolute;z-index:20;top:0;left:0;width:100%;background:#fef7e0;border-bottom:1px solid #f9ab00;padding:10px 24px;text-align:center;font-size:.9em;color:#594300">
+    <span id="health-banner-text"></span>
   </div>
-</nav>
 
-<!-- Hero: Brand Card + Playground -->
-<section class="hero">
+  <!-- Nav -->
+  <a href="/" class="nav-logo">SHOPGRAPH</a>
+  <div class="nav-right">
+    <a href="https://github.com/laundromatic/shopgraph">GITHUB</a>
+    <a href="/health">STATUS</a>
+    <a href="/about">ABOUT</a>
+  </div>
+
+  <!-- Hero Brand Card -->
   <div class="hero-brand">
     <div class="hero-brand-name">SHOPGRAPH</div>
     <div class="hero-brand-sub">Clean product data from any URL. The structuring layer for agentic commerce.</div>
   </div>
 
-  <div class="hero-playground" id="try-it">
-    <div class="hero-try">Try it</div>
-    <p class="hero-desc">Paste any product URL. 200 free calls/month, no signup.</p>
-    <div class="hero-radios">
-      <label class="hero-radio"><input type="radio" name="pg-mode" value="basic" checked onchange="updatePlaygroundMode()"> Basic (free)</label>
-      <label class="hero-radio"><input type="radio" name="pg-mode" value="full" onchange="updatePlaygroundMode()"> Full ($0.02)</label>
+  <!-- Playground Card -->
+  <div class="hero-playground">
+    <div class="pg-try">Try it</div>
+    <p class="pg-desc">Paste any product URL. 200 free calls/month, no signup.</p>
+    <div class="pg-radios">
+      <label class="pg-radio"><input type="radio" name="pg-mode" value="basic" checked onchange="updatePlaygroundMode()"> Basic (free)</label>
+      <label class="pg-radio"><input type="radio" name="pg-mode" value="full" onchange="updatePlaygroundMode()"> Full ($0.02)</label>
     </div>
-    <div class="hero-input-row">
-      <input id="playground-url" class="hero-input" type="url" placeholder="https://www.allbirds.com/products/mens-tree-runners" value="https://www.allbirds.com/products/mens-tree-runners">
-      <button id="playground-btn" class="hero-btn" onclick="runPlayground()">Extract</button>
-    </div>
-    <div id="playground-result" style="display:none">
-      <div id="playground-loading" style="display:none"><span class="spinner"></span> Extracting product data...</div>
-      <div id="playground-error" style="display:none"></div>
-      <pre id="playground-json" style="display:none"></pre>
-      <div id="playground-meta" style="display:none"></div>
-    </div>
-
-    <!-- Works With Bubble -->
-    <div class="works-bubble">
-      <img class="bubble-bg" src="/shape-bubble.svg" alt="" aria-hidden="true">
-      <span>Works with Claude, Cursor, CrewAI, LangGraph, AutoGen, and any MCP client</span>
-    </div>
-  </div>
-</section>
-
-<!-- Integration Zone (over photo) -->
-<section class="integration-zone">
-  <!-- npm SDK (left blob) -->
-  <div class="int-shape int-shape-dark">
-    <img class="shape-bg" src="/shape-blob.svg" alt="" aria-hidden="true">
-    <div class="int-content">
-      <div class="int-title">npm SDK</div>
-      <div class="int-code">
-        import { ShopGraph } from<br>'shopgraph'; const sg = new<br>ShopGraph(); const data =<br>await sg.enrichBasic(url);
+    <input id="playground-url" class="pg-input" type="url" value="https://www.allbirds.com/products/mens-tree-runners" placeholder="https://example.com/product">
+    <button id="playground-btn" class="pg-btn" onclick="runPlayground()">Extract</button>
+    <div class="pg-result">
+      <div id="playground-result" style="display:none">
+        <div id="playground-loading" style="display:none"><span class="spinner"></span>Extracting...</div>
+        <div id="playground-error" style="display:none"></div>
+        <pre id="playground-json" style="display:none"></pre>
+        <div id="playground-meta" style="display:none"></div>
       </div>
     </div>
   </div>
 
-  <!-- Integration (center pill) -->
-  <div class="int-shape int-center">
-    <img class="shape-bg" src="/shape-center.svg" alt="" aria-hidden="true">
-    <div class="int-content">
-      <div class="int-title">INTEGRATION</div>
-      <div class="int-body">
+  <!-- Works With Bubble -->
+  <div class="works-bubble">
+    <img src="/shape-bubble.svg" alt="" aria-hidden="true">
+    <span>Works with Claude, Cursor, CrewAI, LangGraph, AutoGen, and any MCP client</span>
+  </div>
+
+  <!-- Integration: Left Blob (npm SDK) -->
+  <div class="int-left">
+    <img class="shape" src="/shape-blob.svg" alt="">
+    <div class="content">
+      <div class="int-title">npm SDK</div>
+      <div class="int-code">import { ShopGraph } from<br>'shopgraph'; const sg = new<br>ShopGraph(); const data =<br>await sg.enrichBasic(url);</div>
+    </div>
+  </div>
+
+  <!-- Integration: Center (pink dome) -->
+  <div class="int-center-shape">
+    <img class="shape" src="/shape-center.svg" alt="">
+    <div class="content">
+      <div class="int-center-title">INTEGRATION</div>
+      <div class="int-center-body">
         REST API: POST /api/enrich/basic (free)<br>
         POST /api/enrich ($0.02)<br>
         POST /api/enrich/html ($0.02)<br><br>
@@ -259,94 +248,60 @@ code{font-family:'Google Sans Code',monospace;font-size:.9em}
     </div>
   </div>
 
-  <!-- MCP Client (right blob) -->
-  <div class="int-shape int-shape-dark">
-    <img class="shape-bg" src="/shape-blob.svg" alt="" aria-hidden="true">
-    <div class="int-content">
+  <!-- Integration: Right Blob (MCP Client) -->
+  <div class="int-right">
+    <img class="shape" src="/shape-blob.svg" alt="">
+    <div class="content">
       <div class="int-title">MCP Client</div>
-      <div class="int-code">
-        {<br>
-        &nbsp;&nbsp;"mcpServers": { "shopgraph": {<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;"type": "url",<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;"url": "https://shopgraph.dev/<br>&nbsp;&nbsp;&nbsp;&nbsp;mcp"<br>
-        &nbsp;&nbsp;} }<br>
-        }
-      </div>
+      <div class="int-code">{<br>"mcpServers": { "shopgraph": {<br>"type": "url",<br>"url": "https://shopgraph.dev/mcp"<br>} }<br>}</div>
     </div>
   </div>
-</section>
 
-<!-- Frosted Overlay Sections -->
-<div class="frosted">
+  <!-- Where does SHOPGRAPH fit -->
+  <h2 class="where-heading">Where does <strong>SHOPGRAPH</strong> fit in my stack?</h2>
 
-  <!-- Where Does ShopGraph Fit -->
-  <section class="where-section">
-    <h2 class="where-heading">Where does <strong>SHOPGRAPH</strong> fit in my stack?</h2>
-    <div class="where-grid">
-      <div class="where-item">
-        <h3>From a URL: POST /api/enrich</h3>
-        <p>You have a product URL and want structured data back. ShopGraph handles fetching, rendering JavaScript-heavy pages, and extracting product attributes into a single consistent schema. Free tier: 200 calls/month, no signup.</p>
-      </div>
-      <div class="where-item">
-        <h3>From HTML: POST /api/enrich/html</h3>
-        <p>You already have the HTML from your own scraping infrastructure. ShopGraph skips the fetch and goes straight to structuring &mdash; so you keep your proxy setup and ShopGraph handles the product data extraction. Same output, no redundant network calls.</p>
-      </div>
-      <div class="where-item">
-        <h3>From any agent: connect via MCP</h3>
-        <p>You're building in the MCP ecosystem. One line of config connects your agent to ShopGraph's full extraction pipeline. Paid calls settle through Stripe Machine Payments &mdash; no API keys, no subscriptions.</p>
-      </div>
-    </div>
-  </section>
+  <div class="where-col1">
+    <div class="where-title">From a URL: POST /api/enrich</div>
+    <p class="where-body">You have a product URL and want structured data back. ShopGraph handles fetching, rendering JavaScript-heavy pages, and extracting product attributes into a single consistent schema. Free tier: 200 calls/month, no signup.</p>
+  </div>
+  <div class="where-col2">
+    <div class="where-title">From HTML: POST /api/enrich/html</div>
+    <p class="where-body">You already have the HTML from your own scraping infrastructure. ShopGraph skips the fetch and goes straight to structuring &mdash; so you keep your proxy setup and ShopGraph handles the product data extraction. Same output, no redundant network calls.</p>
+  </div>
+  <div class="where-col3">
+    <div class="where-title">From any agent: connect via MCP</div>
+    <p class="where-body">You&rsquo;re building in the MCP ecosystem. One line of config connects your agent to ShopGraph&rsquo;s full extraction pipeline. Paid calls settle through Stripe Machine Payments &mdash; no API keys, no subscriptions.</p>
+  </div>
 
-  <!-- Dotted Separator -->
-  <div class="dot-separator" aria-hidden="true">
-    <span class="dot-green"></span><span class="dot-brown"></span><span class="dot-green"></span><span class="dot-brown"></span>
-    <span class="dot-green"></span><span class="dot-brown"></span><span class="dot-green"></span><span class="dot-brown"></span>
-    <span class="dot-green"></span><span class="dot-brown"></span><span class="dot-green"></span><span class="dot-brown"></span>
-    <span class="dot-green"></span><span class="dot-brown"></span><span class="dot-green"></span><span class="dot-brown"></span>
-    <span class="dot-green"></span><span class="dot-brown"></span><span class="dot-green"></span><span class="dot-brown"></span>
-    <span class="dot-green"></span><span class="dot-brown"></span><span class="dot-green"></span><span class="dot-brown"></span>
-    <span class="dot-green"></span><span class="dot-brown"></span><span class="dot-green"></span><span class="dot-brown"></span>
-    <span class="dot-green"></span><span class="dot-brown"></span><span class="dot-green"></span><span class="dot-brown"></span>
-    <span class="dot-green"></span><span class="dot-brown"></span><span class="dot-green"></span><span class="dot-brown"></span>
-    <span class="dot-green"></span><span class="dot-brown"></span><span class="dot-green"></span><span class="dot-brown"></span>
+  <!-- Dotted Line -->
+  <div class="dot-line" aria-hidden="true">
+    <span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span><span class="dg"></span><span class="db"></span>
   </div>
 
   <!-- Stats -->
-  <section class="stats-section">
-    <h2 class="stats-headline">Tested <strong id="pages-tested">3,628</strong> Product Pages</h2>
-    <div class="stats-row">
-      <div class="stat-item" onclick="openStatsModal()">
-        <div class="stat-number" id="success-rate">97%</div>
-        <div class="stat-label">Extraction Success</div>
-        <div class="stat-desc">Percentage of product pages that return structured data</div>
-      </div>
-      <div class="stat-item" onclick="openStatsModal()">
-        <div class="stat-number" id="verticals-total">22</div>
-        <div class="stat-label">Verticals</div>
-        <div class="stat-desc">B2C and B2B shopping categories tested</div>
-      </div>
-    </div>
-  </section>
+  <h2 class="stats-heading">Tested <strong id="pages-tested">3,628</strong> Product Pages</h2>
+  <div class="stat-left" onclick="openStatsModal()">
+    <div class="stat-num" id="success-rate">97%</div>
+    <div class="stat-label">Extraction Success</div>
+    <div class="stat-desc">Percentage of product pages that return structured data</div>
+  </div>
+  <div class="stat-right" onclick="openStatsModal()">
+    <div class="stat-num" id="verticals-total">22</div>
+    <div class="stat-label">Verticals</div>
+    <div class="stat-desc">B2C and B2B shopping categories tested</div>
+  </div>
 
   <!-- Footer -->
-  <footer class="footer">
-    <div class="footer-left">
-      <strong>Clean product data from any URL.</strong><br>
-      Built by Krishna Brown &middot; <a href="mailto:hi@kb.computer">hi@kb.computer</a>
-    </div>
-    <div class="footer-right">
-      <a href="https://github.com/laundromatic/shopgraph">Github</a> &middot;
-      <a href="/mcp">MCP EndPoint</a> &middot;
-      <a href="/health">Health Check</a><br>
-      <a href="/tos">Terms of Service</a> &middot;
-      <a href="/privacy">Privacy Policy</a>
-    </div>
-  </footer>
+  <div class="footer-left">
+    <strong>Clean product data from any URL.</strong><br>
+    Built by Krishna Brown &middot; <a href="mailto:hi@kb.computer">hi@kb.computer</a>
+  </div>
+  <div class="footer-right">
+    <a href="https://github.com/laundromatic/shopgraph">Github</a> &middot; <a href="/mcp">MCP EndPoint</a> &middot; <a href="/health">Health Check</a><br>
+    <a href="/tos">Terms of Service</a> &middot; <a href="/privacy">Privacy Policy</a>
+  </div>
 
-</div><!-- /frosted -->
-
-</div><!-- /page-bg -->
+</div><!-- /page -->
 
 <!-- Stats Modal -->
 <div class="modal-overlay" id="stats-modal" onclick="if(event.target===this)closeStatsModal()">
@@ -355,85 +310,42 @@ code{font-family:'Google Sans Code',monospace;font-size:.9em}
     <h3 style="font-size:24px;font-weight:700;margin-bottom:8px">Extraction Results by Vertical</h3>
     <p style="font-size:14px;color:#595959;margin-bottom:16px">Across <span id="modal-verticals-count">-</span> shopping verticals &middot; Last updated: <span id="modal-last-updated">-</span></p>
     <table>
-      <thead>
-        <tr><th>Vertical</th><th style="text-align:right">Pages</th><th style="text-align:right">Success</th></tr>
-      </thead>
-      <tbody id="modal-verticals-table">
-        <tr><td colspan="3" style="padding:20px;text-align:center;color:#595959">Loading...</td></tr>
-      </tbody>
+      <thead><tr><th>Vertical</th><th style="text-align:right">Pages</th><th style="text-align:right">Success</th></tr></thead>
+      <tbody id="modal-verticals-table"><tr><td colspan="3" style="padding:20px;text-align:center;color:#595959">Loading...</td></tr></tbody>
     </table>
   </div>
 </div>
 
 <script>
-// === PLAYGROUND ===
 var pgMode='basic';
 function updatePlaygroundMode(){pgMode=document.querySelector('input[name="pg-mode"]:checked').value}
 function runPlayground(){
-  var url=document.getElementById('playground-url').value.trim();
-  if(!url)return;
-  var result=document.getElementById('playground-result');
-  var loading=document.getElementById('playground-loading');
-  var error=document.getElementById('playground-error');
-  var json=document.getElementById('playground-json');
-  var meta=document.getElementById('playground-meta');
-  var btn=document.getElementById('playground-btn');
-  result.style.display='block';loading.style.display='block';
-  error.style.display='none';json.style.display='none';meta.style.display='none';
-  btn.disabled=true;btn.textContent='Extracting...';
-  var start=Date.now();
-  var endpoint=pgMode==='full'?'/api/enrich':'/api/enrich/basic';
-  fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:url})})
+  var url=document.getElementById('playground-url').value.trim();if(!url)return;
+  var r=document.getElementById('playground-result'),l=document.getElementById('playground-loading'),e=document.getElementById('playground-error'),j=document.getElementById('playground-json'),m=document.getElementById('playground-meta'),b=document.getElementById('playground-btn');
+  r.style.display='block';l.style.display='block';e.style.display='none';j.style.display='none';m.style.display='none';b.disabled=true;b.textContent='...';
+  var s=Date.now(),ep=pgMode==='full'?'/api/enrich':'/api/enrich/basic';
+  fetch(ep,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:url})})
   .then(function(r){return r.json().then(function(d){return{status:r.status,data:d}})})
-  .then(function(res){
-    loading.style.display='none';var ms=Date.now()-start;
-    if(res.status>=400){error.style.display='block';error.textContent=res.data.message||res.data.error||'Request failed';}
-    else{
-      json.style.display='block';json.textContent=JSON.stringify(res.data,null,2);
-      meta.style.display='block';
-      var parts=[ms+'ms'];
-      if(res.data.cached)parts.push('cached');
-      if(res.data.free_tier)parts.push(res.data.free_tier.used+'/'+res.data.free_tier.limit+' free calls used');
-      if(res.data.upgrade_hint)parts.push(res.data.upgrade_hint);
-      meta.textContent=parts.join(' · ');
-    }
-  }).catch(function(e){loading.style.display='none';error.style.display='block';error.textContent='Network error: '+e.message;})
-  .finally(function(){btn.disabled=false;btn.textContent='Extract';});
+  .then(function(res){l.style.display='none';var ms=Date.now()-s;
+    if(res.status>=400){e.style.display='block';e.textContent=res.data.message||res.data.error||'Failed';}
+    else{j.style.display='block';j.textContent=JSON.stringify(res.data,null,2);m.style.display='block';
+      var p=[ms+'ms'];if(res.data.cached)p.push('cached');if(res.data.free_tier)p.push(res.data.free_tier.used+'/'+res.data.free_tier.limit+' used');if(res.data.upgrade_hint)p.push(res.data.upgrade_hint);m.textContent=p.join(' · ');}
+  }).catch(function(x){l.style.display='none';e.style.display='block';e.textContent='Error: '+x.message;})
+  .finally(function(){b.disabled=false;b.textContent='Extract';});
 }
 document.getElementById('playground-url').addEventListener('keydown',function(e){if(e.key==='Enter')runPlayground()});
 
-// === STATS ===
 var statsData=null;
-fetch('/api/stats').then(function(r){return r.json()}).then(function(s){
-  statsData=s;
+fetch('/api/stats').then(function(r){return r.json()}).then(function(s){statsData=s;
   if(s.total_tested)document.getElementById('pages-tested').textContent=s.total_tested.toLocaleString();
   if(s.overall_success_rate)document.getElementById('success-rate').textContent=s.overall_success_rate+'%';
   if(s.verticals)document.getElementById('verticals-total').textContent=s.verticals.length;
 }).catch(function(){});
-
-function openStatsModal(){
-  document.getElementById('stats-modal').classList.add('active');
-  if(statsData&&statsData.verticals){
-    document.getElementById('modal-verticals-count').textContent=statsData.verticals.length;
-    document.getElementById('modal-last-updated').textContent=statsData.last_updated||'-';
-    var tbody=document.getElementById('modal-verticals-table');
-    tbody.innerHTML=statsData.verticals.map(function(v){
-      var color=v.success_rate>=90?'#34a853':v.success_rate>=70?'#fbbc04':'#595959';
-      return '<tr><td style="font-weight:500">'+v.name+'</td><td style="text-align:right;color:#595959">'+v.tested+'</td><td style="text-align:right"><span style="color:'+color+';font-weight:600">'+v.success_rate+'%</span></td></tr>';
-    }).join('');
-  }
-}
+function openStatsModal(){document.getElementById('stats-modal').classList.add('active');
+  if(statsData&&statsData.verticals){document.getElementById('modal-verticals-count').textContent=statsData.verticals.length;document.getElementById('modal-last-updated').textContent=statsData.last_updated||'-';
+    document.getElementById('modal-verticals-table').innerHTML=statsData.verticals.map(function(v){var c=v.success_rate>=90?'#34a853':v.success_rate>=70?'#fbbc04':'#595959';return'<tr><td style="font-weight:500">'+v.name+'</td><td style="text-align:right;color:#595959">'+v.tested+'</td><td style="text-align:right"><span style="color:'+c+';font-weight:600">'+v.success_rate+'%</span></td></tr>';}).join('');}}
 function closeStatsModal(){document.getElementById('stats-modal').classList.remove('active')}
-
-// === HEALTH BANNER ===
-fetch('/api/health-check').then(function(r){return r.json()}).then(function(h){
-  if(h.status==='degraded'||h.status==='critical'){
-    var b=document.getElementById('health-banner'),t=document.getElementById('health-banner-text');
-    if(h.status==='critical'){b.style.background='#fce8e6';b.style.borderColor='#d93025';b.style.color='#611a15'}
-    t.textContent='System maintenance in progress. Some pages may return limited results. (Success rate: '+h.success_rate+'%)';
-    b.style.display='block';
-  }
-}).catch(function(){});
+fetch('/api/health-check').then(function(r){return r.json()}).then(function(h){if(h.status==='degraded'||h.status==='critical'){var b=document.getElementById('health-banner'),t=document.getElementById('health-banner-text');if(h.status==='critical'){b.style.background='#fce8e6';b.style.borderColor='#d93025';b.style.color='#611a15'}t.textContent='Maintenance in progress. ('+h.success_rate+'%)';b.style.display='block';}}).catch(function(){});
 </script>
 </body>
 </html>
