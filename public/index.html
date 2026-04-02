@@ -166,10 +166,9 @@ a:hover{opacity:.8}
 @keyframes spin{to{transform:rotate(360deg)}}
 .spinner{display:inline-block;width:16px;height:16px;border:2px solid #f7cccd;border-top-color:#74362d;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:6px}
 
-/* === RESPONSIVE (scale down) === */
-@media(max-width:1800px){
-  .page{transform-origin:top left;transform:scale(calc(100vw / 1792))}
-}
+/* === RESPONSIVE SCALING === */
+body{overflow-x:hidden}
+.page{transform-origin:top center;margin:0 auto}
 </style>
 </head>
 <body>
@@ -345,6 +344,17 @@ function openStatsModal(){document.getElementById('stats-modal').classList.add('
   if(statsData&&statsData.verticals){document.getElementById('modal-verticals-count').textContent=statsData.verticals.length;document.getElementById('modal-last-updated').textContent=statsData.last_updated||'-';
     document.getElementById('modal-verticals-table').innerHTML=statsData.verticals.map(function(v){var c=v.success_rate>=90?'#34a853':v.success_rate>=70?'#fbbc04':'#595959';return'<tr><td style="font-weight:500">'+v.name+'</td><td style="text-align:right;color:#595959">'+v.tested+'</td><td style="text-align:right"><span style="color:'+c+';font-weight:600">'+v.success_rate+'%</span></td></tr>';}).join('');}}
 function closeStatsModal(){document.getElementById('stats-modal').classList.remove('active')}
+// === RESPONSIVE SCALING ===
+function scaleLayout(){
+  var page=document.querySelector('.page');
+  var vw=window.innerWidth;
+  var scale=Math.min(1,vw/1792);
+  page.style.transform='scale('+scale+')';
+  document.body.style.height=(1920*scale)+'px';
+}
+scaleLayout();
+window.addEventListener('resize',scaleLayout);
+
 fetch('/api/health-check').then(function(r){return r.json()}).then(function(h){if(h.status==='degraded'||h.status==='critical'){var b=document.getElementById('health-banner'),t=document.getElementById('health-banner-text');if(h.status==='critical'){b.style.background='#fce8e6';b.style.borderColor='#d93025';b.style.color='#611a15'}t.textContent='Maintenance in progress. ('+h.success_rate+'%)';b.style.display='block';}}).catch(function(){});
 </script>
 </body>
