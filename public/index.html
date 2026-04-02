@@ -65,12 +65,13 @@ code{font-family:'Google Sans Code',monospace;font-size:.9em}
 
 /* Works With Bubble */
 .works-bubble{
-  position:absolute;top:40px;right:-80px;
-  width:160px;height:160px;border-radius:50%;
-  background:#2d8a9e;
+  position:absolute;top:20px;right:-90px;
+  width:196px;height:196px;
   display:flex;align-items:center;justify-content:center;text-align:center;
-  color:#fff;font-size:14px;font-weight:400;padding:20px;line-height:1.3;
+  color:#fff;font-size:14px;font-weight:400;padding:32px;line-height:1.3;
 }
+.works-bubble img.bubble-bg{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+.works-bubble span{position:relative;z-index:1}
 
 /* === INTEGRATION SECTION (over photo) === */
 .integration-zone{
@@ -222,7 +223,10 @@ code{font-family:'Google Sans Code',monospace;font-size:.9em}
     </div>
 
     <!-- Works With Bubble -->
-    <div class="works-bubble">Works with Claude, Cursor, CrewAI, LangGraph, AutoGen, and any MCP client</div>
+    <div class="works-bubble">
+      <img class="bubble-bg" src="/shape-bubble.svg" alt="" aria-hidden="true">
+      <span>Works with Claude, Cursor, CrewAI, LangGraph, AutoGen, and any MCP client</span>
+    </div>
   </div>
 </section>
 
