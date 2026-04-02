@@ -219,25 +219,26 @@ const data = await sg.enrichBasic(url);</pre>
   </div>
 </section>
 
-<!-- Use Cases -->
+<!-- Entry Points -->
 <section class="section section-alt">
   <div class="container">
     <div class="section-header">
-      <h2>When You Need It</h2>
+      <h2>Where It Fits</h2>
+      <p>You send messy input. You get clean structured product data back.</p>
     </div>
 
     <div class="usecase-grid" style="grid-template-columns:repeat(3,1fr)">
       <div class="usecase-card">
-        <h3>The URL has no API</h3>
-        <p>Millions of merchants have product pages but no Shopify storefront, no Google Shopping feed, no structured data endpoint. ShopGraph makes those pages machine-readable.</p>
+        <h3>From a URL</h3>
+        <p><code>POST /api/enrich</code> with a product URL. ShopGraph fetches, parses, and structures. For when you don't have the HTML yet.</p>
       </div>
       <div class="usecase-card">
-        <h3>The HTML is messy</h3>
-        <p>Your scraper got the HTML. Now what? ShopGraph turns inconsistent markup into clean, typed product JSON with confidence scores. One schema, any merchant.</p>
+        <h3>From HTML</h3>
+        <p><code>POST /api/enrich/html</code> with raw markup. ShopGraph structures it without re-fetching. For when your scraper already handled the page.</p>
       </div>
       <div class="usecase-card">
-        <h3>The data needs to be trusted</h3>
-        <p>LLMs can extract product data but do it inconsistently and expensively. ShopGraph's three-tier pipeline produces reliable output at a fraction of the token cost.</p>
+        <h3>From any agent</h3>
+        <p>Connect via MCP protocol at <code>shopgraph.dev/mcp</code>. Same engine, native agent integration. For when you're building in the MCP ecosystem.</p>
       </div>
     </div>
   </div>
