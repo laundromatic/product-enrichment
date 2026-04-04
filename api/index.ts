@@ -207,11 +207,7 @@ app.post('/api/enrich', async (req, res) => {
     return res.status(400).json({ error: 'Invalid URL format' });
   }
 
-  const cached = cache.get(url);
-  if (cached) {
-    return res.json({ product: cached, cached: true });
-  }
-
+  // Payment check BEFORE cache — cached basic results must not bypass payment gate
   if (!payment_method_id) {
     const payments = getPayments();
     return res.status(402).json({
@@ -230,6 +226,11 @@ app.post('/api/enrich', async (req, res) => {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Payment processing failed';
     return res.status(402).json({ error: 'payment_failed', message });
+  }
+
+  const cached = cache.get(url);
+  if (cached) {
+    return res.json({ product: cached, cached: true, receipt });
   }
 
   try {
@@ -252,11 +253,7 @@ app.post('/api/enrich/html', async (req, res) => {
     return res.status(400).json({ error: 'Missing required field: url (original page URL for context)' });
   }
 
-  const cached = cache.get(url);
-  if (cached) {
-    return res.json({ product: cached, cached: true });
-  }
-
+  // Payment check BEFORE cache — cached basic results must not bypass payment gate
   if (!payment_method_id) {
     const payments = getPayments();
     return res.status(402).json({
@@ -274,6 +271,11 @@ app.post('/api/enrich/html', async (req, res) => {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Payment processing failed';
     return res.status(402).json({ error: 'payment_failed', message });
+  }
+
+  const cached = cache.get(url);
+  if (cached) {
+    return res.json({ product: cached, cached: true, receipt });
   }
 
   try {

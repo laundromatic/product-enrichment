@@ -1,0 +1,30 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.laundromatic/shopgraph",
+  "version": "1.0.1",
+  "description": "Clean product data from any URL. Schema.org + AI extraction. 200 free calls/month.",
+  "repository": {
+    "url": "https://github.com/laundromatic/shopgraph",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "name": "shopgraph",
+      "identifier": "shopgraph",
+      "version": "1.0.1",
+      "runtime": "node",
+      "transport": {
+        "type": "streamable-http",
+        "url": "https://shopgraph.dev/mcp"
+      },
+      "environment_variables": []
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://shopgraph.dev/mcp"
+    }
+  ]
+}

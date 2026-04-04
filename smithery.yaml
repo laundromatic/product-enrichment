@@ -4,6 +4,10 @@ icon: https://shopgraph.dev/icon.png
 serverUrl: https://shopgraph.dev/mcp
 configSchema:
   type: object
-  properties: {}
+  required: []
+  properties:
+    payment_method_id:
+      type: string
+      description: "Stripe payment method ID for paid calls ($0.02/call). Optional — free tier (200 calls/month) works without this."
   additionalProperties: false
-  description: No configuration required. Connect to https://shopgraph.dev/mcp. 200 free calls/month, no signup. Paid calls via Stripe MPP.
+  description: "No configuration required for the free tier. Add payment_method_id for paid LLM-powered extraction."

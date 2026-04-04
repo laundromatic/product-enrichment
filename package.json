@@ -1,6 +1,6 @@
 {
   "name": "shopgraph",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Product data structuring layer for AI agents. REST API + MCP server. Send a URL or raw HTML, get structured product data with confidence scores.",
   "type": "module",
   "main": "dist/client.js",
@@ -48,9 +48,10 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/laundromatic/shopgraph.git"
+    "url": "git+https://github.com/laundromatic/shopgraph.git"
   },
   "homepage": "https://shopgraph.dev",
+  "mcpName": "io.github.laundromatic/shopgraph",
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
     "@modelcontextprotocol/sdk": "^1.8.0",
