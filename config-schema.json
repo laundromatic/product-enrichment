@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "required": [],
+  "properties": {
+    "payment_method_id": {
+      "type": "string",
+      "description": "Stripe payment method ID for paid calls. Optional for free tier."
+    }
+  },
+  "additionalProperties": false
+}
