@@ -18,6 +18,7 @@ import { FreeTierTracker } from '../src/free-tier.js';
 import { extractProduct, extractFromRawHtml, extractBasicFromUrl } from '../src/extract.js';
 import { TOOL_PRICING, FREE_TIER } from '../src/types.js';
 import type { EnrichmentOptions } from '../src/types.js';
+import { mapToUcp } from '../src/ucp-mapper.js';
 import { getDashboardStats, getDashboardStatsAsync } from '../src/stats.js';
 import { runDailyTests } from '../src/test-runner.js';
 import { runHealthCheck } from '../src/health.js';
@@ -37,6 +38,12 @@ function getPayments() {
   return new PaymentManager(
     process.env.STRIPE_SECRET_KEY || process.env.STRIPE_TEST_SECRET_KEY
   );
+}
+
+/** Parse format option from request body or query string. */
+function parseFormat(req: express.Request): 'default' | 'ucp' {
+  const raw = req.body?.format ?? req.query?.format;
+  return raw === 'ucp' ? 'ucp' : 'default';
 }
 
 // ---------------------------------------------------------------------------
@@ -177,8 +184,10 @@ app.post('/api/enrich/basic', async (req, res) => {
 
   const rawThresholdBasic = req.body?.strict_confidence_threshold ?? req.query?.strict_confidence_threshold;
   const thresholdBasic = rawThresholdBasic != null ? parseFloat(String(rawThresholdBasic)) : undefined;
+  const formatBasic = parseFormat(req);
   const optionsBasic: EnrichmentOptions = {
     strict_confidence_threshold: (thresholdBasic != null && !isNaN(thresholdBasic)) ? thresholdBasic : undefined,
+    format: formatBasic,
   };
 
   try {
@@ -187,6 +196,19 @@ app.post('/api/enrich/basic', async (req, res) => {
     cache.set(url, product);
 
     const hasData = product.product_name !== null;
+
+    if (formatBasic === 'ucp') {
+      const ucpResult = mapToUcp(product, optionsBasic);
+      if (!ucpResult.valid) {
+        return res.json({ ...ucpResult, cached: false, free_tier: { used: usage + 1, limit: FREE_TIER.MONTHLY_LIMIT } });
+      }
+      return res.json({
+        line_item: ucpResult.line_item,
+        cached: false,
+        free_tier: { used: usage + 1, limit: FREE_TIER.MONTHLY_LIMIT },
+      });
+    }
+
     res.json({
       product,
       cached: false,
@@ -242,13 +264,24 @@ app.post('/api/enrich', async (req, res) => {
 
   const rawThresholdEnrich = req.body?.strict_confidence_threshold ?? req.query?.strict_confidence_threshold;
   const thresholdEnrich = rawThresholdEnrich != null ? parseFloat(String(rawThresholdEnrich)) : undefined;
+  const formatEnrich = parseFormat(req);
   const optionsEnrich: EnrichmentOptions = {
     strict_confidence_threshold: (thresholdEnrich != null && !isNaN(thresholdEnrich)) ? thresholdEnrich : undefined,
+    format: formatEnrich,
   };
 
   try {
     const product = await extractProduct(url, optionsEnrich);
     cache.set(url, product);
+
+    if (formatEnrich === 'ucp') {
+      const ucpResult = mapToUcp(product, optionsEnrich);
+      if (!ucpResult.valid) {
+        return res.json({ ...ucpResult, receipt, cached: false });
+      }
+      return res.json({ line_item: ucpResult.line_item, receipt, cached: false });
+    }
+
     res.json({ product, receipt, cached: false });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Extraction failed';
@@ -293,13 +326,24 @@ app.post('/api/enrich/html', async (req, res) => {
 
   const rawThresholdHtml = req.body?.strict_confidence_threshold ?? req.query?.strict_confidence_threshold;
   const thresholdHtml = rawThresholdHtml != null ? parseFloat(String(rawThresholdHtml)) : undefined;
+  const formatHtml = parseFormat(req);
   const optionsHtml: EnrichmentOptions = {
     strict_confidence_threshold: (thresholdHtml != null && !isNaN(thresholdHtml)) ? thresholdHtml : undefined,
+    format: formatHtml,
   };
 
   try {
     const product = await extractFromRawHtml(html, url, optionsHtml);
     cache.set(url, product);
+
+    if (formatHtml === 'ucp') {
+      const ucpResult = mapToUcp(product, optionsHtml);
+      if (!ucpResult.valid) {
+        return res.json({ ...ucpResult, receipt, cached: false });
+      }
+      return res.json({ line_item: ucpResult.line_item, receipt, cached: false });
+    }
+
     res.json({ product, receipt, cached: false });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Extraction failed';

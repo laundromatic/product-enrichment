@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { ProductData, EnrichmentResult, MppChallenge, EnrichmentOptions } from './types.js';
 import { TOOL_PRICING, FREE_TIER } from './types.js';
 import { extractProduct, extractFromRawHtml, extractBasicFromUrl } from './extract.js';
+import { mapToUcp } from './ucp-mapper.js';
 import { EnrichmentCache } from './cache.js';
 import { PaymentManager } from './payments.js';
 import { FreeTierTracker } from './free-tier.js';
@@ -34,6 +35,8 @@ export function createServer(
     payment_method_id: z.string().optional().describe('Stripe payment method ID for MPP payment'),
     strict_confidence_threshold: z.number().min(0).max(1).optional()
       .describe('Fields below this confidence will be nulled with explanation. Default: off.'),
+    format: z.enum(['default', 'ucp']).optional().default('default')
+      .describe('Output format. "ucp" returns UCP line_item format. Default: "default".'),
   };
 
   const toolAnnotations = {
@@ -47,9 +50,10 @@ export function createServer(
     'Extract comprehensive product data from a URL including name, price, brand, images, availability, and more. Uses schema.org structured data when available, with LLM fallback. Costs $0.02 per call (cached results are free).',
     enrichParams,
     toolAnnotations,
-    async ({ url, payment_method_id, strict_confidence_threshold }) => {
+    async ({ url, payment_method_id, strict_confidence_threshold, format }) => {
       const options: EnrichmentOptions = {
         strict_confidence_threshold: strict_confidence_threshold ?? undefined,
+        format: format ?? 'default',
       };
       return handleEnrichment('enrich_product', url, payment_method_id, cache, payments, tracker, options);
     },
@@ -61,9 +65,10 @@ export function createServer(
     `Extract basic product attributes from a URL (name, price, brand, availability). Faster and cheaper than enrich_product. ${FREE_TIER.MONTHLY_LIMIT} free calls/month — no payment needed. Paid: $0.01 per call after free tier.`,
     enrichParams,
     toolAnnotations,
-    async ({ url, payment_method_id, strict_confidence_threshold }) => {
+    async ({ url, payment_method_id, strict_confidence_threshold, format }) => {
       const options: EnrichmentOptions = {
         strict_confidence_threshold: strict_confidence_threshold ?? undefined,
+        format: format ?? 'default',
       };
       return handleEnrichment('enrich_basic', url, payment_method_id, cache, payments, tracker, options);
     },
@@ -79,11 +84,14 @@ export function createServer(
       payment_method_id: z.string().optional().describe('Stripe payment method ID for MPP payment'),
       strict_confidence_threshold: z.number().min(0).max(1).optional()
         .describe('Fields below this confidence will be nulled with explanation. Default: off.'),
+      format: z.enum(['default', 'ucp']).optional().default('default')
+        .describe('Output format. "ucp" returns UCP line_item format. Default: "default".'),
     },
     toolAnnotations,
-    async ({ html, url, payment_method_id, strict_confidence_threshold }) => {
+    async ({ html, url, payment_method_id, strict_confidence_threshold, format }) => {
       const options: EnrichmentOptions = {
         strict_confidence_threshold: strict_confidence_threshold ?? undefined,
+        format: format ?? 'default',
       };
       return handleHtmlEnrichment(url, html, payment_method_id, cache, payments, tracker, options);
     },
@@ -141,6 +149,33 @@ export function createServer(
 type ToolResponse = { content: Array<{ type: 'text'; text: string }>; isError?: boolean };
 
 /**
+ * Format an enrichment result, optionally converting to UCP format.
+ */
+function formatResult(result: object & { product: ProductData; receipt?: unknown; cached: boolean }, options?: EnrichmentOptions): ToolResponse {
+  if (options?.format === 'ucp') {
+    const ucpResult = mapToUcp(result.product, options);
+    if (!ucpResult.valid) {
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify({
+          error: 'ucp_mapping_failed',
+          ...ucpResult,
+          receipt: result.receipt,
+        }, null, 2) }],
+        isError: true,
+      };
+    }
+    return {
+      content: [{ type: 'text' as const, text: JSON.stringify({
+        line_item: ucpResult.line_item,
+        receipt: result.receipt,
+        cached: result.cached,
+      }, null, 2) }],
+    };
+  }
+  return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+}
+
+/**
  * Handle URL-based enrichment with payment gating, free tier, and caching.
  */
 async function handleEnrichment(
@@ -155,7 +190,7 @@ async function handleEnrichment(
   const cached = cache.get(url);
   if (cached) {
     const result: EnrichmentResult = { product: cached, cached: true };
-    return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    return formatResult(result, options);
   }
 
   // Check free tier eligibility before requiring payment
@@ -186,7 +221,7 @@ async function handleEnrichment(
         free_tier: { used: usage + 1, limit: FREE_TIER.MONTHLY_LIMIT },
         ...(hasData ? {} : { upgrade_hint: 'No Schema.org data found on this page. Use enrich_product ($0.02) for LLM-powered extraction.' }),
       };
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      return formatResult(result, options);
     }
     // Free tier exhausted — fall through to payment required
   }
@@ -239,7 +274,7 @@ async function handleEnrichment(
 
   cache.set(url, product);
   const result: EnrichmentResult = { product, receipt, cached: false };
-  return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+  return formatResult(result, options);
 }
 
 /**
@@ -257,7 +292,7 @@ async function handleHtmlEnrichment(
   const cached = cache.get(url);
   if (cached) {
     const result: EnrichmentResult = { product: cached, cached: true };
-    return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    return formatResult(result, options);
   }
 
   if (!paymentMethodId) {
@@ -300,5 +335,5 @@ async function handleHtmlEnrichment(
 
   cache.set(url, product);
   const result: EnrichmentResult = { product, receipt, cached: false };
-  return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+  return formatResult(result, options);
 }

@@ -137,3 +137,28 @@ export interface ExtractionStatus {
   threshold?: number;
   message: string;
 }
+
+// ── UCP (Universal Commerce Protocol) types ─────────────────────────
+
+/** UCP item — core product identity within a line_item. */
+export interface UcpItem {
+  id: string;
+  title: string;
+  /** Unit price in minor currency units (cents). */
+  price: number;
+  /** Product image URL (optional). */
+  image_url?: string;
+}
+
+/** UCP line_item — the standard interchange format for product data. */
+export interface UcpLineItem {
+  item: UcpItem;
+  /** Quantity of the item (always 1 for single-product enrichment). */
+  quantity: number;
+  /** ShopGraph extraction metadata. */
+  _shopgraph?: ShopGraphMetadata;
+  /** Fields that were scrubbed or not available. */
+  _extraction_status?: Record<string, ExtractionStatus>;
+  /** Extended product attributes not in UCP core spec. */
+  _extensions?: Record<string, unknown>;
+}
