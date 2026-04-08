@@ -4,6 +4,7 @@ import type { ProductData, EnrichmentResult, MppChallenge, EnrichmentOptions } f
 import { TOOL_PRICING, FREE_TIER } from './types.js';
 import { extractProduct, extractFromRawHtml, extractBasicFromUrl } from './extract.js';
 import { mapToUcp } from './ucp-mapper.js';
+import { scoreAgentReadiness } from './agent-ready.js';
 import { EnrichmentCache } from './cache.js';
 import { PaymentManager } from './payments.js';
 import { FreeTierTracker } from './free-tier.js';
@@ -37,6 +38,7 @@ export function createServer(
       .describe('Fields below this confidence will be nulled with explanation. Default: off.'),
     format: z.enum(['default', 'ucp']).optional().default('default')
       .describe('Output format. "ucp" returns UCP line_item format. Default: "default".'),
+    include_score: z.boolean().optional().describe('Include agent-readiness score in response.'),
   };
 
   const toolAnnotations = {
@@ -50,10 +52,11 @@ export function createServer(
     'Extract comprehensive product data from a URL including name, price, brand, images, availability, and more. Uses schema.org structured data when available, with LLM fallback. Costs $0.02 per call (cached results are free).',
     enrichParams,
     toolAnnotations,
-    async ({ url, payment_method_id, strict_confidence_threshold, format }) => {
+    async ({ url, payment_method_id, strict_confidence_threshold, format, include_score }) => {
       const options: EnrichmentOptions = {
         strict_confidence_threshold: strict_confidence_threshold ?? undefined,
         format: format ?? 'default',
+        include_score: include_score ?? undefined,
       };
       return handleEnrichment('enrich_product', url, payment_method_id, cache, payments, tracker, options);
     },
@@ -65,10 +68,11 @@ export function createServer(
     `Extract basic product attributes from a URL (name, price, brand, availability). Faster and cheaper than enrich_product. ${FREE_TIER.MONTHLY_LIMIT} free calls/month — no payment needed. Paid: $0.01 per call after free tier.`,
     enrichParams,
     toolAnnotations,
-    async ({ url, payment_method_id, strict_confidence_threshold, format }) => {
+    async ({ url, payment_method_id, strict_confidence_threshold, format, include_score }) => {
       const options: EnrichmentOptions = {
         strict_confidence_threshold: strict_confidence_threshold ?? undefined,
         format: format ?? 'default',
+        include_score: include_score ?? undefined,
       };
       return handleEnrichment('enrich_basic', url, payment_method_id, cache, payments, tracker, options);
     },
@@ -86,14 +90,39 @@ export function createServer(
         .describe('Fields below this confidence will be nulled with explanation. Default: off.'),
       format: z.enum(['default', 'ucp']).optional().default('default')
         .describe('Output format. "ucp" returns UCP line_item format. Default: "default".'),
+      include_score: z.boolean().optional().describe('Include agent-readiness score in response.'),
     },
     toolAnnotations,
-    async ({ html, url, payment_method_id, strict_confidence_threshold, format }) => {
+    async ({ html, url, payment_method_id, strict_confidence_threshold, format, include_score }) => {
       const options: EnrichmentOptions = {
         strict_confidence_threshold: strict_confidence_threshold ?? undefined,
         format: format ?? 'default',
+        include_score: include_score ?? undefined,
       };
       return handleHtmlEnrichment(url, html, payment_method_id, cache, payments, tracker, options);
+    },
+  );
+
+  // Score product tool — extraction + agent-readiness scoring
+  server.tool(
+    'score_product',
+    'Extract product data and return agent-readiness score (0-100). Scores structured data completeness, semantic richness, UCP compatibility, pricing clarity, and inventory signals. Full scoring breakdown included.',
+    {
+      url: z.string().url().describe('Product page URL to extract and score'),
+      payment_method_id: z.string().optional().describe('Stripe payment method ID for MPP payment'),
+      strict_confidence_threshold: z.number().min(0).max(1).optional()
+        .describe('Fields below this confidence will be nulled with explanation. Default: off.'),
+      format: z.enum(['default', 'ucp']).optional().default('default')
+        .describe('Output format. "ucp" returns UCP line_item format. Default: "default".'),
+    },
+    toolAnnotations,
+    async ({ url, payment_method_id, strict_confidence_threshold, format }) => {
+      const options: EnrichmentOptions = {
+        strict_confidence_threshold: strict_confidence_threshold ?? undefined,
+        format: format ?? 'default',
+        include_score: true,
+      };
+      return handleEnrichment('enrich_product', url, payment_method_id, cache, payments, tracker, options);
     },
   );
 
@@ -149,9 +178,11 @@ export function createServer(
 type ToolResponse = { content: Array<{ type: 'text'; text: string }>; isError?: boolean };
 
 /**
- * Format an enrichment result, optionally converting to UCP format.
+ * Format an enrichment result, optionally converting to UCP format and/or including score.
  */
 function formatResult(result: object & { product: ProductData; receipt?: unknown; cached: boolean }, options?: EnrichmentOptions): ToolResponse {
+  const scoreData = options?.include_score ? { score: scoreAgentReadiness(result.product) } : {};
+
   if (options?.format === 'ucp') {
     const ucpResult = mapToUcp(result.product, options);
     if (!ucpResult.valid) {
@@ -159,6 +190,7 @@ function formatResult(result: object & { product: ProductData; receipt?: unknown
         content: [{ type: 'text' as const, text: JSON.stringify({
           error: 'ucp_mapping_failed',
           ...ucpResult,
+          ...scoreData,
           receipt: result.receipt,
         }, null, 2) }],
         isError: true,
@@ -167,12 +199,13 @@ function formatResult(result: object & { product: ProductData; receipt?: unknown
     return {
       content: [{ type: 'text' as const, text: JSON.stringify({
         line_item: ucpResult.line_item,
+        ...scoreData,
         receipt: result.receipt,
         cached: result.cached,
       }, null, 2) }],
     };
   }
-  return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+  return { content: [{ type: 'text' as const, text: JSON.stringify({ ...result, ...scoreData }, null, 2) }] };
 }
 
 /**

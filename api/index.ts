@@ -20,6 +20,7 @@ import { extractProduct, extractFromRawHtml, extractBasicFromUrl } from '../src/
 import { TOOL_PRICING, FREE_TIER, TIER_CONFIGS } from '../src/types.js';
 import type { EnrichmentOptions, Customer, SubscriptionTier } from '../src/types.js';
 import { mapToUcp } from '../src/ucp-mapper.js';
+import { scoreAgentReadiness } from '../src/agent-ready.js';
 import { getDashboardStats, getDashboardStatsAsync } from '../src/stats.js';
 import { runDailyTests } from '../src/test-runner.js';
 import { runHealthCheck } from '../src/health.js';
@@ -51,6 +52,11 @@ function getPayments() {
 function parseFormat(req: express.Request): 'default' | 'ucp' {
   const raw = req.body?.format ?? req.query?.format;
   return raw === 'ucp' ? 'ucp' : 'default';
+}
+
+/** Parse include_score option from request body or query string. */
+function parseIncludeScore(req: express.Request): boolean {
+  return req.body?.include_score === true || req.query?.include_score === 'true';
 }
 
 // ---------------------------------------------------------------------------
@@ -193,6 +199,120 @@ app.get('/api/run-tests', async (req, res) => {
 // REST API — primary distribution surface
 // ---------------------------------------------------------------------------
 
+// POST /api/score — extraction + agent-readiness scoring
+app.post('/api/score', async (req, res) => {
+  const { url, payment_method_id } = req.body ?? {};
+  if (!url || typeof url !== 'string') {
+    return res.status(400).json({ error: 'Missing required field: url' });
+  }
+
+  try {
+    new URL(url);
+  } catch {
+    return res.status(400).json({ error: 'Invalid URL format' });
+  }
+
+  const rawThreshold = req.body?.strict_confidence_threshold ?? req.query?.strict_confidence_threshold;
+  const threshold = rawThreshold != null ? parseFloat(String(rawThreshold)) : undefined;
+  const format = parseFormat(req);
+  const options: EnrichmentOptions = {
+    strict_confidence_threshold: (threshold != null && !isNaN(threshold)) ? threshold : undefined,
+    format,
+    include_score: true,
+  };
+
+  // ── API key auth path ──
+  if (req.customer && redis && req.customer.tier !== 'free') {
+    const limit = await checkLimit(redis, req.customer.id, req.customer.tier);
+    if (!limit.allowed) {
+      return res.status(429).json({
+        error: 'tier_limit_exhausted',
+        used: limit.used,
+        limit: limit.limit,
+        tier: req.customer.tier,
+        message: `Monthly limit reached (${limit.limit}/month on ${req.customer.tier} tier).`,
+      });
+    }
+
+    const cached = cache.get(url);
+    if (cached) {
+      const score = scoreAgentReadiness(cached);
+      if (format === 'ucp') {
+        const ucpResult = mapToUcp(cached, options);
+        return res.json({ ...ucpResult, score, cached: true });
+      }
+      return res.json({ product: cached, score, cached: true });
+    }
+
+    try {
+      const product = await extractProduct(url, options);
+      await incrementUsage(redis, req.customer.id);
+      cache.set(url, product);
+
+      const score = scoreAgentReadiness(product);
+      const usage = await getUsageSummary(redis, req.customer.id, req.customer.tier);
+      if (format === 'ucp') {
+        const ucpResult = mapToUcp(product, options);
+        return res.json({ ...ucpResult, score, cached: false, usage });
+      }
+      return res.json({ product, score, cached: false, usage });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Extraction failed';
+      return res.status(500).json({ error: 'extraction_failed', message });
+    }
+  }
+
+  // ── MPP payment path ──
+  if (!payment_method_id) {
+    const payments = getPayments();
+    return res.status(402).json({
+      error: 'payment_required',
+      status: 402,
+      challenge: payments.createChallenge('enrich_product'),
+      message: 'Payment required. Include payment_method_id in request body. Cost: $0.02',
+      free_alternative: { endpoint: '/api/enrich/basic', description: 'Schema.org only, 500 free calls/month' },
+    });
+  }
+
+  const payments = getPayments();
+  let receipt;
+  try {
+    receipt = await payments.processPayment('enrich_product', payment_method_id);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Payment processing failed';
+    return res.status(402).json({ error: 'payment_failed', message });
+  }
+
+  const cached = cache.get(url);
+  if (cached) {
+    const score = scoreAgentReadiness(cached);
+    if (format === 'ucp') {
+      const ucpResult = mapToUcp(cached, options);
+      return res.json({ ...ucpResult, score, receipt, cached: true });
+    }
+    return res.json({ product: cached, score, receipt, cached: true });
+  }
+
+  try {
+    const product = await extractProduct(url, options);
+    cache.set(url, product);
+    const score = scoreAgentReadiness(product);
+
+    if (format === 'ucp') {
+      const ucpResult = mapToUcp(product, options);
+      if (!ucpResult.valid) {
+        return res.json({ ...ucpResult, score, receipt, cached: false });
+      }
+      return res.json({ line_item: ucpResult.line_item, score, receipt, cached: false });
+    }
+
+    res.json({ product, score, receipt, cached: false });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Extraction failed';
+    res.status(500).json({ error: 'extraction_failed', message, receipt });
+  }
+});
+
 // POST /api/enrich/basic — Schema.org only, free tier eligible
 app.post('/api/enrich/basic', async (req, res) => {
   const { url } = req.body ?? {};
@@ -210,9 +330,11 @@ app.post('/api/enrich/basic', async (req, res) => {
   const rawThresholdEarly = req.body?.strict_confidence_threshold ?? req.query?.strict_confidence_threshold;
   const thresholdEarly = rawThresholdEarly != null ? parseFloat(String(rawThresholdEarly)) : undefined;
   const formatEarly = parseFormat(req);
+  const includeScoreBasic = parseIncludeScore(req);
   const optionsEarly: EnrichmentOptions = {
     strict_confidence_threshold: (thresholdEarly != null && !isNaN(thresholdEarly)) ? thresholdEarly : undefined,
     format: formatEarly,
+    include_score: includeScoreBasic,
   };
 
   // Check cache first
@@ -220,11 +342,12 @@ app.post('/api/enrich/basic', async (req, res) => {
   if (cached) {
     // Re-apply threshold and format to cached results
     const product = { ...cached, image_urls: [], primary_image_url: null };
+    const scoreData = includeScoreBasic ? { score: scoreAgentReadiness(product) } : {};
     if (formatEarly === 'ucp') {
       const ucpResult = mapToUcp(product, optionsEarly);
-      return res.json({ ...ucpResult, cached: true });
+      return res.json({ ...ucpResult, ...scoreData, cached: true });
     }
-    return res.json({ product, cached: true });
+    return res.json({ product, ...scoreData, cached: true });
   }
 
   // ── API key auth path ──
@@ -247,14 +370,16 @@ app.post('/api/enrich/basic', async (req, res) => {
 
       const usage = await getUsageSummary(redis, req.customer.id, req.customer.tier);
       const hasData = product.product_name !== null;
+      const scoreData = includeScoreBasic ? { score: scoreAgentReadiness(product) } : {};
 
       if (formatEarly === 'ucp') {
         const ucpResult = mapToUcp(product, optionsEarly);
-        return res.json({ ...ucpResult, cached: false, usage });
+        return res.json({ ...ucpResult, ...scoreData, cached: false, usage });
       }
 
       return res.json({
         product,
+        ...scoreData,
         cached: false,
         usage,
         ...(hasData ? {} : {
@@ -295,14 +420,16 @@ app.post('/api/enrich/basic', async (req, res) => {
     cache.set(url, product);
 
     const hasData = product.product_name !== null;
+    const scoreDataBasic = includeScoreBasic ? { score: scoreAgentReadiness(product) } : {};
 
     if (formatBasic === 'ucp') {
       const ucpResult = mapToUcp(product, optionsBasic);
       if (!ucpResult.valid) {
-        return res.json({ ...ucpResult, cached: false, free_tier: { used: usage + 1, limit: FREE_TIER.MONTHLY_LIMIT } });
+        return res.json({ ...ucpResult, ...scoreDataBasic, cached: false, free_tier: { used: usage + 1, limit: FREE_TIER.MONTHLY_LIMIT } });
       }
       return res.json({
         line_item: ucpResult.line_item,
+        ...scoreDataBasic,
         cached: false,
         free_tier: { used: usage + 1, limit: FREE_TIER.MONTHLY_LIMIT },
       });
@@ -310,6 +437,7 @@ app.post('/api/enrich/basic', async (req, res) => {
 
     res.json({
       product,
+      ...scoreDataBasic,
       cached: false,
       free_tier: { used: usage + 1, limit: FREE_TIER.MONTHLY_LIMIT },
       ...(hasData ? {} : {
@@ -339,9 +467,11 @@ app.post('/api/enrich', async (req, res) => {
   const rawThresholdEnrich = req.body?.strict_confidence_threshold ?? req.query?.strict_confidence_threshold;
   const thresholdEnrich = rawThresholdEnrich != null ? parseFloat(String(rawThresholdEnrich)) : undefined;
   const formatEnrich = parseFormat(req);
+  const includeScoreEnrich = parseIncludeScore(req);
   const optionsEnrich: EnrichmentOptions = {
     strict_confidence_threshold: (thresholdEnrich != null && !isNaN(thresholdEnrich)) ? thresholdEnrich : undefined,
     format: formatEnrich,
+    include_score: includeScoreEnrich,
   };
 
   // ── API key auth path (paid tiers skip MPP) ──
@@ -359,11 +489,12 @@ app.post('/api/enrich', async (req, res) => {
 
     const cached = cache.get(url);
     if (cached) {
+      const scoreEnrichCached = includeScoreEnrich ? { score: scoreAgentReadiness(cached) } : {};
       if (formatEnrich === 'ucp') {
         const ucpResult = mapToUcp(cached, optionsEnrich);
-        return res.json({ ...ucpResult, cached: true });
+        return res.json({ ...ucpResult, ...scoreEnrichCached, cached: true });
       }
-      return res.json({ product: cached, cached: true });
+      return res.json({ product: cached, ...scoreEnrichCached, cached: true });
     }
 
     try {
@@ -372,11 +503,12 @@ app.post('/api/enrich', async (req, res) => {
       cache.set(url, product);
 
       const usage = await getUsageSummary(redis, req.customer.id, req.customer.tier);
+      const scoreEnrichAuth = includeScoreEnrich ? { score: scoreAgentReadiness(product) } : {};
       if (formatEnrich === 'ucp') {
         const ucpResult = mapToUcp(product, optionsEnrich);
-        return res.json({ ...ucpResult, cached: false, usage });
+        return res.json({ ...ucpResult, ...scoreEnrichAuth, cached: false, usage });
       }
-      return res.json({ product, cached: false, usage });
+      return res.json({ product, ...scoreEnrichAuth, cached: false, usage });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Extraction failed';
       return res.status(500).json({ error: 'extraction_failed', message });
@@ -406,26 +538,28 @@ app.post('/api/enrich', async (req, res) => {
 
   const cached = cache.get(url);
   if (cached) {
+    const scoreEnrichMppCached = includeScoreEnrich ? { score: scoreAgentReadiness(cached) } : {};
     if (formatEnrich === 'ucp') {
       const ucpResult = mapToUcp(cached, optionsEnrich);
-      return res.json({ ...ucpResult, receipt, cached: true });
+      return res.json({ ...ucpResult, ...scoreEnrichMppCached, receipt, cached: true });
     }
-    return res.json({ product: cached, cached: true, receipt });
+    return res.json({ product: cached, ...scoreEnrichMppCached, cached: true, receipt });
   }
 
   try {
     const product = await extractProduct(url, optionsEnrich);
     cache.set(url, product);
+    const scoreEnrichMpp = includeScoreEnrich ? { score: scoreAgentReadiness(product) } : {};
 
     if (formatEnrich === 'ucp') {
       const ucpResult = mapToUcp(product, optionsEnrich);
       if (!ucpResult.valid) {
-        return res.json({ ...ucpResult, receipt, cached: false });
+        return res.json({ ...ucpResult, ...scoreEnrichMpp, receipt, cached: false });
       }
-      return res.json({ line_item: ucpResult.line_item, receipt, cached: false });
+      return res.json({ line_item: ucpResult.line_item, ...scoreEnrichMpp, receipt, cached: false });
     }
 
-    res.json({ product, receipt, cached: false });
+    res.json({ product, ...scoreEnrichMpp, receipt, cached: false });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Extraction failed';
     res.status(500).json({ error: 'extraction_failed', message, receipt });

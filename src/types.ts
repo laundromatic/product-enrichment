@@ -121,6 +121,7 @@ export function getFieldConfidence(baseline: number, fieldName: string): number 
 export interface EnrichmentOptions {
   strict_confidence_threshold?: number | null;
   format?: 'default' | 'ucp';
+  include_score?: boolean;
 }
 
 export interface ShopGraphMetadata {

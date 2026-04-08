@@ -1,0 +1,439 @@
+/**
+ * AgentReady — product data agent-readiness scoring for ShopGraph.
+ *
+ * Pure scoring function: takes a ProductData, returns a score.
+ * No API calls, no Redis, no side effects — just math on ProductData.
+ *
+ * Scores across 5 dimensions (weights sum to 1.0):
+ *   1. Structured data completeness (0.30)
+ *   2. Semantic richness (0.20)
+ *   3. UCP compatibility (0.20)
+ *   4. Pricing clarity (0.15)
+ *   5. Inventory signal quality (0.15)
+ *
+ * B2B-specific signals (MOQ, lead time, bulk pricing, part numbers)
+ * are detected from description/dimensions and award bonus points
+ * without penalizing B2C products that lack them.
+ */
+
+import type { ProductData } from './types.js';
+import { mapToUcp, validateUcpOutput } from './ucp-mapper.js';
+
+// ── Public types ────────────────────────────────────────────────────
+
+export interface AgentReadyScore {
+  agent_readiness_score: number; // 0-100
+  scoring_breakdown: {
+    structured_data_completeness: DimensionScore;
+    semantic_richness: DimensionScore;
+    ucp_compatibility: DimensionScore;
+    pricing_clarity: DimensionScore;
+    inventory_signal_quality: DimensionScore;
+  };
+  scoring_version: string;
+  methodology_url: string;
+}
+
+export interface DimensionScore {
+  score: number; // 0-100
+  weight: number; // 0.0-1.0
+  weighted_contribution: number; // score * weight
+  details: Record<string, string | number | boolean>;
+}
+
+// ── Constants ───────────────────────────────────────────────────────
+
+export const SCORING_VERSION = '2026-04-08-v1';
+export const METHODOLOGY_URL = 'https://shopgraph.dev/methodology';
+
+// ── B2B signal detection helpers ────────────────────────────────────
+
+const MOQ_PATTERNS = [
+  /\bm\.?o\.?q\.?\b/i,
+  /\bminimum\s+order\s+quantit/i,
+  /\bmin\.?\s*order\b/i,
+  /\bminimum\s+purchase\b/i,
+];
+
+const LEAD_TIME_PATTERNS = [
+  /\blead\s+time\b/i,
+  /\bdelivery\s+time\b/i,
+  /\bships?\s+in\s+\d/i,
+  /\bprocessing\s+time\b/i,
+  /\bavailable\s+in\s+\d+\s+(day|week|business)/i,
+];
+
+const BULK_PRICING_PATTERNS = [
+  /\bbulk\s+pric/i,
+  /\btier(ed)?\s+pric/i,
+  /\bvolume\s+discount/i,
+  /\bquantity\s+discount/i,
+  /\bbuy\s+\d+\s+get\b/i,
+  /\bwholesale\b/i,
+];
+
+const PART_NUMBER_PATTERNS = [
+  /\bpart\s*#?\s*:?\s*[A-Z0-9-]{3,}/i,
+  /\bsku\s*:?\s*[A-Z0-9-]{3,}/i,
+  /\bmpn\s*:?\s*[A-Z0-9-]{3,}/i,
+  /\bmodel\s*#?\s*:?\s*[A-Z0-9-]{3,}/i,
+  /\bitem\s*#?\s*:?\s*[A-Z0-9-]{3,}/i,
+  /\bupc\s*:?\s*\d{8,}/i,
+];
+
+const SPEC_TABLE_PATTERNS = [
+  /\bspecification/i,
+  /\btechnical\s+data\b/i,
+  /\bproduct\s+details?\b/i,
+];
+
+function matchesAnyPattern(text: string, patterns: RegExp[]): boolean {
+  return patterns.some(p => p.test(text));
+}
+
+/**
+ * Gather all searchable text from a product for B2B signal detection.
+ */
+function getSearchableText(product: ProductData): string {
+  const parts: string[] = [];
+  if (product.description) parts.push(product.description);
+  if (product.dimensions) {
+    for (const [k, v] of Object.entries(product.dimensions)) {
+      parts.push(`${k}: ${v}`);
+    }
+  }
+  if (product.product_name) parts.push(product.product_name);
+  if (product.categories.length > 0) parts.push(product.categories.join(' '));
+  return parts.join(' ');
+}
+
+// ── Dimension scorers ───────────────────────────────────────────────
+
+/**
+ * Dimension 1: Structured data completeness (weight: 0.30)
+ */
+function scoreStructuredDataCompleteness(product: ProductData): DimensionScore {
+  const coreFields: Array<{ name: string; present: boolean }> = [
+    { name: 'title', present: product.product_name !== null && product.product_name !== '' },
+    { name: 'price', present: product.price !== null && product.price.amount !== null },
+    { name: 'description', present: product.description !== null && product.description !== '' },
+    { name: 'availability', present: product.availability !== 'unknown' },
+    { name: 'images', present: product.image_urls.length > 0 || product.primary_image_url !== null },
+    { name: 'brand', present: product.brand !== null && product.brand !== '' },
+    { name: 'categories', present: product.categories.length > 0 },
+    { name: 'specs', present: product.dimensions !== null && Object.keys(product.dimensions).length > 0 },
+  ];
+
+  const details: Record<string, string | number | boolean> = {};
+  let presentCount = 0;
+  for (const field of coreFields) {
+    details[field.name] = field.present ? 'present' : 'missing';
+    if (field.present) presentCount++;
+  }
+
+  // Base score from core fields
+  let score = (presentCount / coreFields.length) * 100;
+
+  // B2B bonus: detect signals in text, cap bonus at 10 points
+  const text = getSearchableText(product);
+  let b2bBonus = 0;
+  const b2bFields = [
+    { name: 'part_number', detected: matchesAnyPattern(text, PART_NUMBER_PATTERNS) },
+    { name: 'moq', detected: matchesAnyPattern(text, MOQ_PATTERNS) },
+    { name: 'lead_time', detected: matchesAnyPattern(text, LEAD_TIME_PATTERNS) },
+    { name: 'bulk_pricing', detected: matchesAnyPattern(text, BULK_PRICING_PATTERNS) },
+  ];
+
+  for (const field of b2bFields) {
+    details[`b2b_${field.name}`] = field.detected ? 'detected' : 'not_detected';
+    if (field.detected) b2bBonus += 2.5;
+  }
+
+  score = Math.min(100, score + b2bBonus);
+  details.b2b_bonus = b2bBonus;
+
+  const weight = 0.30;
+  return {
+    score: Math.round(score * 100) / 100,
+    weight,
+    weighted_contribution: Math.round(score * weight * 100) / 100,
+    details,
+  };
+}
+
+/**
+ * Dimension 2: Semantic richness (weight: 0.20)
+ */
+function scoreSemanticRichness(product: ProductData): DimensionScore {
+  const details: Record<string, string | number | boolean> = {};
+  let totalPoints = 0;
+  const maxPoints = 100;
+
+  // Category depth (deeper = better, max 25 pts)
+  const categoryDepth = product.categories.length;
+  const categoryScore = Math.min(25, categoryDepth * 8);
+  details.category_count = categoryDepth;
+  details.category_score = categoryScore;
+  totalPoints += categoryScore;
+
+  // Attribute count: color, material, dimensions keys (max 25 pts)
+  let attrCount = 0;
+  attrCount += product.color.length;
+  attrCount += product.material.length;
+  if (product.dimensions) attrCount += Object.keys(product.dimensions).length;
+  const attrScore = Math.min(25, attrCount * 5);
+  details.attribute_count = attrCount;
+  details.attribute_score = attrScore;
+  totalPoints += attrScore;
+
+  // Variant coverage: multiple colors or materials suggest variants (max 25 pts)
+  const variantSignals = Math.max(product.color.length, product.material.length);
+  const variantScore = variantSignals >= 3 ? 25 : variantSignals >= 2 ? 15 : variantSignals >= 1 ? 8 : 0;
+  details.variant_signals = variantSignals;
+  details.variant_score = variantScore;
+  totalPoints += variantScore;
+
+  // Description quality (max 25 pts)
+  const descLength = product.description?.length ?? 0;
+  let descScore = 0;
+  if (descLength >= 200) descScore = 25;
+  else if (descLength >= 100) descScore = 20;
+  else if (descLength >= 50) descScore = 15;
+  else if (descLength > 0) descScore = 5;
+  details.description_length = descLength;
+  details.description_quality_score = descScore;
+  totalPoints += descScore;
+
+  const score = Math.min(maxPoints, totalPoints);
+  const weight = 0.20;
+  return {
+    score: Math.round(score * 100) / 100,
+    weight,
+    weighted_contribution: Math.round(score * weight * 100) / 100,
+    details,
+  };
+}
+
+/**
+ * Dimension 3: UCP compatibility (weight: 0.20)
+ */
+function scoreUcpCompatibility(product: ProductData): DimensionScore {
+  const details: Record<string, string | number | boolean> = {};
+
+  // Required UCP fields: item.id (url), item.title (product_name), item.price (price.amount)
+  const requiredFields = [
+    { name: 'item_id', present: !!product.url },
+    { name: 'item_title', present: product.product_name !== null && product.product_name !== '' },
+    { name: 'item_price', present: product.price !== null && product.price.amount !== null },
+  ];
+
+  let requiredPresent = 0;
+  for (const f of requiredFields) {
+    details[`required_${f.name}`] = f.present;
+    if (f.present) requiredPresent++;
+  }
+  details.required_present = requiredPresent;
+  details.required_total = requiredFields.length;
+
+  // Optional UCP-relevant fields
+  const optionalFields = [
+    { name: 'image_url', present: product.primary_image_url !== null },
+    { name: 'brand', present: product.brand !== null && product.brand !== '' },
+    { name: 'description', present: product.description !== null && product.description !== '' },
+    { name: 'availability', present: product.availability !== 'unknown' },
+    { name: 'categories', present: product.categories.length > 0 },
+    { name: 'currency', present: product.price?.currency !== null && product.price?.currency !== undefined },
+    { name: 'color', present: product.color.length > 0 },
+    { name: 'material', present: product.material.length > 0 },
+  ];
+
+  let optionalPresent = 0;
+  for (const f of optionalFields) {
+    details[`optional_${f.name}`] = f.present;
+    if (f.present) optionalPresent++;
+  }
+  details.optional_present = optionalPresent;
+  details.optional_total = optionalFields.length;
+
+  // Validate actual UCP mapping
+  const ucpResult = mapToUcp(product);
+  const ucpValid = ucpResult.valid;
+  details.ucp_mapping_valid = ucpValid;
+
+  if (ucpValid) {
+    const validation = validateUcpOutput(ucpResult.line_item);
+    details.ucp_output_valid = validation.valid;
+    if (validation.missing_fields.length > 0) {
+      details.ucp_missing = validation.missing_fields.join(', ');
+    }
+  }
+
+  // Score: required fields dominate (60%), optional fields (25%), actual validation (15%)
+  const requiredScore = (requiredPresent / requiredFields.length) * 60;
+  const optionalScore = (optionalPresent / optionalFields.length) * 25;
+  const validationScore = ucpValid ? 15 : 0;
+
+  const score = Math.min(100, requiredScore + optionalScore + validationScore);
+  const weight = 0.20;
+  return {
+    score: Math.round(score * 100) / 100,
+    weight,
+    weighted_contribution: Math.round(score * weight * 100) / 100,
+    details,
+  };
+}
+
+/**
+ * Dimension 4: Pricing clarity (weight: 0.15)
+ */
+function scorePricingClarity(product: ProductData): DimensionScore {
+  const details: Record<string, string | number | boolean> = {};
+
+  if (product.price === null || product.price.amount === null) {
+    details.base_price = false;
+    details.currency = false;
+    details.sale_price = false;
+    details.bulk_pricing_detected = false;
+    details.moq_detected = false;
+    return {
+      score: 0,
+      weight: 0.15,
+      weighted_contribution: 0,
+      details,
+    };
+  }
+
+  let score = 0;
+
+  // Base price present (40 pts)
+  const hasBasePrice = product.price.amount !== null;
+  details.base_price = hasBasePrice;
+  if (hasBasePrice) score += 40;
+
+  // Currency present (20 pts)
+  const hasCurrency = product.price.currency !== null && product.price.currency !== undefined && product.price.currency !== '';
+  details.currency = hasCurrency;
+  if (hasCurrency) score += 20;
+
+  // Sale price info (15 pts)
+  const hasSalePrice = product.price.sale_price !== null && product.price.sale_price !== undefined;
+  details.sale_price = hasSalePrice;
+  if (hasSalePrice) score += 15;
+
+  // B2B: bulk/tier pricing detected (15 pts)
+  const text = getSearchableText(product);
+  const hasBulkPricing = matchesAnyPattern(text, BULK_PRICING_PATTERNS);
+  details.bulk_pricing_detected = hasBulkPricing;
+  if (hasBulkPricing) score += 15;
+
+  // B2B: MOQ detected (10 pts)
+  const hasMoq = matchesAnyPattern(text, MOQ_PATTERNS);
+  details.moq_detected = hasMoq;
+  if (hasMoq) score += 10;
+
+  score = Math.min(100, score);
+  const weight = 0.15;
+  return {
+    score: Math.round(score * 100) / 100,
+    weight,
+    weighted_contribution: Math.round(score * weight * 100) / 100,
+    details,
+  };
+}
+
+/**
+ * Dimension 5: Inventory signal quality (weight: 0.15)
+ */
+function scoreInventorySignalQuality(product: ProductData): DimensionScore {
+  const details: Record<string, string | number | boolean> = {};
+
+  if (product.availability === 'unknown') {
+    details.stock_status = false;
+    details.stock_status_value = 'unknown';
+    details.quantity_available = false;
+    details.lead_time_detected = false;
+    details.backorder_detected = false;
+    return {
+      score: 0,
+      weight: 0.15,
+      weighted_contribution: 0,
+      details,
+    };
+  }
+
+  let score = 0;
+
+  // Stock status present and specific (40 pts)
+  // After early return above, availability is always a concrete value
+  details.stock_status = true;
+  details.stock_status_value = product.availability;
+  score += 40;
+
+  // Preorder is more informative than binary in/out (bonus 10 pts)
+  if (product.availability === 'preorder') {
+    score += 10;
+    details.preorder_signal = true;
+  }
+
+  // Check for quantity information in description/dimensions (25 pts)
+  const text = getSearchableText(product);
+  const hasQuantity = /\b\d+\s*(in\s+stock|available|remaining|left)\b/i.test(text) ||
+    /\bstock\s*:\s*\d+/i.test(text) ||
+    /\bquantity\s*(available)?\s*:\s*\d+/i.test(text);
+  details.quantity_available = hasQuantity;
+  if (hasQuantity) score += 25;
+
+  // B2B: lead time detected (20 pts)
+  const hasLeadTime = matchesAnyPattern(text, LEAD_TIME_PATTERNS);
+  details.lead_time_detected = hasLeadTime;
+  if (hasLeadTime) score += 20;
+
+  // Backorder info (15 pts)
+  const hasBackorder = /\bback\s*order/i.test(text) || /\bpre-?order\b/i.test(text);
+  details.backorder_detected = hasBackorder;
+  if (hasBackorder) score += 15;
+
+  score = Math.min(100, score);
+  const weight = 0.15;
+  return {
+    score: Math.round(score * 100) / 100,
+    weight,
+    weighted_contribution: Math.round(score * weight * 100) / 100,
+    details,
+  };
+}
+
+// ── Main scoring function ───────────────────────────────────────────
+
+/**
+ * Score a product's agent-readiness across 5 dimensions.
+ *
+ * Pure function — no API calls, no side effects. Just math on ProductData.
+ */
+export function scoreAgentReadiness(product: ProductData): AgentReadyScore {
+  const structured = scoreStructuredDataCompleteness(product);
+  const semantic = scoreSemanticRichness(product);
+  const ucp = scoreUcpCompatibility(product);
+  const pricing = scorePricingClarity(product);
+  const inventory = scoreInventorySignalQuality(product);
+
+  const overallScore =
+    structured.weighted_contribution +
+    semantic.weighted_contribution +
+    ucp.weighted_contribution +
+    pricing.weighted_contribution +
+    inventory.weighted_contribution;
+
+  return {
+    agent_readiness_score: Math.round(overallScore * 100) / 100,
+    scoring_breakdown: {
+      structured_data_completeness: structured,
+      semantic_richness: semantic,
+      ucp_compatibility: ucp,
+      pricing_clarity: pricing,
+      inventory_signal_quality: inventory,
+    },
+    scoring_version: SCORING_VERSION,
+    methodology_url: METHODOLOGY_URL,
+  };
+}
