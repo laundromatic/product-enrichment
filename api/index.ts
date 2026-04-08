@@ -392,6 +392,14 @@ app.get('/api/stats/segments', async (_req, res) => {
   res.json(segmentStats ?? { b2b: null, b2c: null });
 });
 
+// GET /api/stats/methods — extraction method ratio + cost attribution
+app.get('/api/stats/methods', async (_req, res) => {
+  const redis = getRedis();
+  if (!redis) return res.json({ error: 'Redis not configured' });
+  const methodRatio = await redis.get('stats:method_ratio');
+  res.json(methodRatio ?? { schema_org: 0, llm: 0, hybrid: 0, unknown: 0, total: 0, estimated_cost_cents: 0 });
+});
+
 // GET /api/stats/calibration — confidence calibration report
 app.get('/api/stats/calibration', async (_req, res) => {
   const redis = getRedis();

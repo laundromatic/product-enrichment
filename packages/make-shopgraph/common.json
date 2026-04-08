@@ -1,0 +1,30 @@
+{
+  "parameters": {
+    "strict_confidence_threshold": {
+      "name": "strict_confidence_threshold",
+      "type": "number",
+      "label": "Confidence Threshold",
+      "required": false,
+      "help": "Fields below this confidence (0.0-1.0) will be scrubbed to null with explanation. Leave empty for all fields."
+    },
+    "format": {
+      "name": "format",
+      "type": "select",
+      "label": "Output Format",
+      "required": false,
+      "default": "default",
+      "options": [
+        { "label": "Default (ProductData)", "value": "default" },
+        { "label": "UCP (Universal Commerce Protocol)", "value": "ucp" }
+      ]
+    },
+    "include_score": {
+      "name": "include_score",
+      "type": "boolean",
+      "label": "Include AgentReady Score",
+      "required": false,
+      "default": false,
+      "help": "Include agent-readiness score (0-100) in the response"
+    }
+  }
+}

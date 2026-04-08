@@ -1,0 +1,35 @@
+{
+  "name": "n8n-nodes-shopgraph",
+  "version": "1.0.0",
+  "description": "n8n community node for ShopGraph — product data extraction with confidence scores",
+  "keywords": [
+    "n8n-community-node-package",
+    "n8n",
+    "shopgraph",
+    "product-data",
+    "extraction",
+    "commerce"
+  ],
+  "license": "MIT",
+  "main": "dist/index.js",
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/ShopGraphApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/ShopGraph/ShopGraph.node.js"
+    ]
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  },
+  "devDependencies": {
+    "n8n-workflow": "^1.0.0",
+    "typescript": "^5.0.0"
+  }
+}

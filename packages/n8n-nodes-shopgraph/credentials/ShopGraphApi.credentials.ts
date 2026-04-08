@@ -1,0 +1,33 @@
+import {
+	IAuthenticateGeneric,
+	ICredentialType,
+	INodeProperties,
+} from 'n8n-workflow';
+
+export class ShopGraphApi implements ICredentialType {
+	name = 'shopGraphApi';
+	displayName = 'ShopGraph API';
+	documentationUrl = 'https://shopgraph.dev/docs';
+
+	properties: INodeProperties[] = [
+		{
+			displayName: 'API Key',
+			name: 'apiKey',
+			type: 'string',
+			typeOptions: { password: true },
+			default: '',
+			placeholder: 'sg_live_...',
+			description:
+				'ShopGraph API key. Get one at shopgraph.dev/dashboard. Leave empty to use the free tier (500 calls/month).',
+		},
+	];
+
+	authenticate: IAuthenticateGeneric = {
+		type: 'generic',
+		properties: {
+			headers: {
+				Authorization: '=Bearer {{$credentials.apiKey}}',
+			},
+		},
+	};
+}

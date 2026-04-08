@@ -1,0 +1,17 @@
+{
+	"node": "n8n-nodes-shopgraph.shopGraph",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": ["Data & Storage"],
+	"resources": {
+		"primaryDocumentation": [
+			{
+				"url": "https://shopgraph.dev/docs"
+			}
+		]
+	},
+	"alias": ["product", "enrichment", "extraction", "commerce", "shopgraph", "scraper"],
+	"subcategories": {
+		"Data & Storage": ["Data Transformation"]
+	}
+}

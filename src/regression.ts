@@ -19,6 +19,7 @@ export interface RegressionSnapshot {
   price_currency: string | null;
   availability: string;
   confidence_overall: number;
+  extraction_method: string | null;
 }
 
 export interface RegressionCheck {
@@ -45,6 +46,7 @@ export async function saveSnapshot(
     price_currency: product.price?.currency ?? null,
     availability: product.availability,
     confidence_overall: product.confidence.overall,
+    extraction_method: product.extraction_method,
   };
 
   const key = `regression:${hashUrl(url)}`;

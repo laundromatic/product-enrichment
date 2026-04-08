@@ -19,6 +19,7 @@ import {
   type FieldResults,
   type FieldStats,
   type SegmentStats,
+  type MethodRatioStats,
   KV_KEYS,
   BASELINE_STATS,
   getRedis,
@@ -364,6 +365,7 @@ export function aggregateFieldAndSegmentStats(
   fieldStats: FieldStats[];
   segmentStats: SegmentStats;
   accuracyStats: { avg_accuracy: number; entries_with_ground_truth: number };
+  methodRatioStats: MethodRatioStats;
 } {
   // Per-field aggregation
   const fieldCounts: Record<string, { extracted: number; total: number; confidenceSum: number; confidenceCount: number; accurateCount: number; accuracyTotal: number }> = {};
@@ -450,7 +452,28 @@ export function aggregateFieldAndSegmentStats(
     entries_with_ground_truth: accuracyCount,
   };
 
-  return { fieldStats, segmentStats, accuracyStats };
+  // Extraction method ratio
+  const methodCounts: Record<string, number> = { schema_org: 0, llm: 0, hybrid: 0, unknown: 0 };
+  for (const r of batchResults) {
+    const method = r.extraction_method ?? 'unknown';
+    if (method in methodCounts) {
+      methodCounts[method] += 1;
+    } else {
+      methodCounts.unknown += 1;
+    }
+  }
+  const total = batchResults.length || 1;
+  const methodRatioStats: MethodRatioStats = {
+    schema_org: methodCounts.schema_org / total,
+    llm: methodCounts.llm / total,
+    hybrid: methodCounts.hybrid / total,
+    unknown: methodCounts.unknown / total,
+    total: batchResults.length,
+    // Cost estimates: schema_org=0, llm=0.1c, hybrid=0.5c per extraction
+    estimated_cost_cents: (methodCounts.llm * 0.1) + (methodCounts.hybrid * 0.5),
+  };
+
+  return { fieldStats, segmentStats, accuracyStats, methodRatioStats };
 }
 
 /**
@@ -628,16 +651,18 @@ export async function runDailyTests(corpus: CorpusEntry[]): Promise<{
       await writeStats(redis, updatedStats);
 
       // Aggregate and store field-level, segment, and accuracy stats
-      const { fieldStats, segmentStats, accuracyStats } = aggregateFieldAndSegmentStats(results);
+      const { fieldStats, segmentStats, accuracyStats, methodRatioStats } = aggregateFieldAndSegmentStats(results);
       await Promise.all([
         redis.set(KV_KEYS.FIELD_STATS, { fields: fieldStats }),
         redis.set(KV_KEYS.SEGMENT_STATS, segmentStats),
         redis.set(KV_KEYS.ACCURACY_STATS, accuracyStats),
+        redis.set(KV_KEYS.METHOD_RATIO, methodRatioStats),
       ]);
 
-      // Field-level health alerts
-      const { checkFieldHealth } = await import('./health.js');
+      // Field-level and method ratio health alerts
+      const { checkFieldHealth, checkMethodRatioHealth } = await import('./health.js');
       await checkFieldHealth(redis, fieldStats);
+      await checkMethodRatioHealth(redis, methodRatioStats);
 
       // Auto-switch to maintenance mode at 5,000 pages
       if (updatedStats.total_tested >= MAINTENANCE_TARGET) {

@@ -52,6 +52,16 @@ export interface SegmentStats {
   b2c: { tested: number; success_rate: number; avg_confidence: number };
 }
 
+/** Extraction method ratio breakdown for cost/infrastructure monitoring. */
+export interface MethodRatioStats {
+  schema_org: number;  // fraction 0-1
+  llm: number;
+  hybrid: number;
+  unknown: number;
+  total: number;
+  estimated_cost_cents: number; // LLM ~0.1c, hybrid ~0.5c, schema_org 0
+}
+
 export interface BatchResult {
   url: string;
   vertical: string;
@@ -87,6 +97,7 @@ export const KV_KEYS = {
   FIELD_STATS: 'stats:field_stats',
   SEGMENT_STATS: 'stats:segments',
   ACCURACY_STATS: 'stats:accuracy',
+  METHOD_RATIO: 'stats:method_ratio',
   resultKey: (urlHash: string) => `results:${urlHash}`,
 } as const;
 

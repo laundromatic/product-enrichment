@@ -1,0 +1,20 @@
+{
+  "label": "ShopGraph API Key",
+  "type": "apiKey",
+  "parameters": [
+    {
+      "name": "apiKey",
+      "type": "text",
+      "label": "API Key",
+      "required": false,
+      "help": "Get your API key at shopgraph.dev/dashboard. Leave empty for free tier (500 calls/month)."
+    }
+  ],
+  "headers": {
+    "Authorization": "Bearer {{parameters.apiKey}}"
+  },
+  "test": {
+    "url": "{{baseUrl}}/health",
+    "method": "GET"
+  }
+}

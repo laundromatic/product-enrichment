@@ -1,0 +1,9 @@
+{
+  "name": "ShopGraph",
+  "label": "ShopGraph",
+  "description": "Extract structured product data from any open-web product URL. Per-field confidence scores. UCP-compatible output. Agent-readiness scoring.",
+  "version": "1.0.0",
+  "baseUrl": "https://shopgraph.dev",
+  "categories": ["commerce", "data"],
+  "audience": ["developers", "commerce"]
+}

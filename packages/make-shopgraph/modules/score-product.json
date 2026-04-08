@@ -1,0 +1,49 @@
+{
+  "name": "scoreProduct",
+  "label": "Score Product",
+  "description": "Extract product data and compute an AgentReady score (0-100) indicating how well-structured the data is for AI agent consumption. Cost: $0.02/call.",
+  "connection": "api-key",
+  "type": "action",
+  "parameters": [
+    {
+      "name": "url",
+      "type": "text",
+      "label": "Product URL",
+      "required": true,
+      "help": "The URL of the product page to extract and score"
+    },
+    {
+      "name": "strict_confidence_threshold",
+      "type": "number",
+      "label": "Confidence Threshold",
+      "required": false,
+      "help": "Fields below this confidence (0.0-1.0) will be scrubbed to null with explanation. Leave empty for all fields."
+    },
+    {
+      "name": "format",
+      "type": "select",
+      "label": "Output Format",
+      "required": false,
+      "default": "default",
+      "options": [
+        { "label": "Default (ProductData)", "value": "default" },
+        { "label": "UCP (Universal Commerce Protocol)", "value": "ucp" }
+      ]
+    }
+  ],
+  "request": {
+    "url": "{{baseUrl}}/api/score",
+    "method": "POST",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "url": "{{parameters.url}}",
+      "strict_confidence_threshold": "{{parameters.strict_confidence_threshold}}",
+      "format": "{{parameters.format}}"
+    }
+  },
+  "response": {
+    "output": "{{body}}"
+  }
+}

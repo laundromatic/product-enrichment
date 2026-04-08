@@ -196,4 +196,25 @@ export async function checkFieldHealth(redis: Redis, fieldStats: import('./stats
   }
 }
 
-export { ALERT_THRESHOLD, DEGRADED_THRESHOLD };
+const HYBRID_RATIO_ALERT_THRESHOLD = 0.20; // 20%
+
+/**
+ * Alert when hybrid (Playwright) extraction ratio exceeds threshold.
+ * Hybrid extractions are ~10x more expensive in compute than Schema.org or LLM-only.
+ */
+export async function checkMethodRatioHealth(
+  redis: Redis,
+  methodRatio: import('./stats.js').MethodRatioStats,
+): Promise<void> {
+  if (methodRatio.hybrid > HYBRID_RATIO_ALERT_THRESHOLD) {
+    await redis.set('alert:hybrid_ratio_high', JSON.stringify({
+      hybrid_ratio: methodRatio.hybrid,
+      threshold: HYBRID_RATIO_ALERT_THRESHOLD,
+      estimated_cost_cents: methodRatio.estimated_cost_cents,
+      total_extractions: methodRatio.total,
+      timestamp: new Date().toISOString(),
+    }));
+  }
+}
+
+export { ALERT_THRESHOLD, DEGRADED_THRESHOLD, HYBRID_RATIO_ALERT_THRESHOLD };

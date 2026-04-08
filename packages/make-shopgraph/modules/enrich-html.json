@@ -1,0 +1,57 @@
+{
+  "name": "enrichHtml",
+  "label": "Enrich from HTML",
+  "description": "Extract structured product data from raw HTML content. Cost: $0.02/call. Requires both html and url parameters.",
+  "connection": "api-key",
+  "type": "action",
+  "parameters": [
+    {
+      "name": "html",
+      "type": "text",
+      "label": "HTML Content",
+      "required": true,
+      "help": "The raw HTML content of the product page"
+    },
+    {
+      "name": "url",
+      "type": "text",
+      "label": "Original Page URL",
+      "required": true,
+      "help": "The original URL of the product page (used for context and relative URL resolution)"
+    },
+    {
+      "name": "strict_confidence_threshold",
+      "type": "number",
+      "label": "Confidence Threshold",
+      "required": false,
+      "help": "Fields below this confidence (0.0-1.0) will be scrubbed to null with explanation. Leave empty for all fields."
+    },
+    {
+      "name": "format",
+      "type": "select",
+      "label": "Output Format",
+      "required": false,
+      "default": "default",
+      "options": [
+        { "label": "Default (ProductData)", "value": "default" },
+        { "label": "UCP (Universal Commerce Protocol)", "value": "ucp" }
+      ]
+    }
+  ],
+  "request": {
+    "url": "{{baseUrl}}/api/enrich/html",
+    "method": "POST",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "html": "{{parameters.html}}",
+      "url": "{{parameters.url}}",
+      "strict_confidence_threshold": "{{parameters.strict_confidence_threshold}}",
+      "format": "{{parameters.format}}"
+    }
+  },
+  "response": {
+    "output": "{{body}}"
+  }
+}
