@@ -440,7 +440,8 @@ const ACTIVE_WEIGHTS = {
  */
 function scoreAccessReadiness(_product: ProductData): DimensionScore {
   const weight = _accessReadinessActive ? ACTIVE_WEIGHTS.access_readiness : 0.00;
-  const score = 100; // TODO: implement actual probing when active
+  // When active, implement real probing per src/access-readiness-spec.ts
+  const score = 100;
   return {
     score,
     weight,
