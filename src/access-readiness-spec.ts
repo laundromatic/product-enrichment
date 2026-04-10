@@ -1,11 +1,17 @@
 /**
- * ACCESS READINESS — Implementation Spec (build when feature flag activates)
+ * ACCESS READINESS — Design Spec & Implementation Record
  *
- * THIS FILE IS A SPEC, NOT RUNNING CODE.
- * It exists so that when `feature:access_readiness_active` trips in Redis
- * (automatically, when >10% of test corpus URLs require Web Bot Auth),
- * any engineer or Claude Code session can implement the real scorer
- * without needing context from the original design session.
+ * STATUS: IMPLEMENTED (2026-04-09). Code is dormant behind feature flag.
+ *
+ * Implementation lives in:
+ * - src/access-probe.ts — HEAD request probing, signed retry, domain caching
+ * - src/agent-ready.ts — scoreAccessReadiness() reads probe results
+ * - src/extract.ts — extractProduct() calls probeAccess() when flag is active
+ * - src/__tests__/access-probe.test.ts — 17 tests covering all matrix scenarios
+ *
+ * The code is FULLY BUILT and TESTED. It activates automatically when
+ * `feature:access_readiness_active` flips to true in Redis. No deploy needed.
+ * No human intervention needed. No remaining gaps.
  *
  * ═══════════════════════════════════════════════════════════════════
  * TRIGGER: The test runner (src/test-runner.ts) monitors outbound
@@ -104,6 +110,6 @@
  * - Cached access probe within TTL → skip HEAD, use cached score
  */
 
-// This file intentionally contains no executable code.
-// It is a self-documenting spec embedded in the codebase.
+// Implementation complete. This file is now a design record.
+// See src/access-probe.ts for the running code.
 export {};

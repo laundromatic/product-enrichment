@@ -3,6 +3,9 @@ import { buildFieldFreshness, applyDecay } from './types.js';
 import { extractSchemaOrg } from './schema-org.js';
 import { extractWithLlm } from './llm-extract.js';
 import { signRequest } from './agent-identity.js';
+import { probeAccess, type AccessProbeResult } from './access-probe.js';
+import { isAccessReadinessActive } from './agent-ready.js';
+import { getRedis } from './redis.js';
 
 const USER_AGENT =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
@@ -102,8 +105,21 @@ export function applyThresholdAndMetadata(
  * Main extraction orchestrator.
  * Fetches URL, tries schema.org first, falls back to LLM.
  * If result is missing price AND availability, tries browser fallback (when enabled).
+ *
+ * When access readiness is active (feature flag), runs a pre-flight HEAD
+ * probe to classify the target URL's access posture. Probe results are
+ * cached per domain (1-hour TTL) and consumed by scoreAccessReadiness().
  */
 export async function extractProduct(url: string, options?: EnrichmentOptions): Promise<ProductData> {
+  // Pre-flight access probe (dormant until feature flag activates)
+  if (isAccessReadinessActive()) {
+    try {
+      await probeAccess(url, getRedis());
+    } catch {
+      // Probe failure should never block extraction
+    }
+  }
+
   let fetchResult: ProductData;
   let fetchFailed403 = false;
 

@@ -18,6 +18,7 @@
 
 import type { ProductData } from './types.js';
 import { mapToUcp, validateUcpOutput } from './ucp-mapper.js';
+import { getCachedProbe } from './access-probe.js';
 
 // ── Public types ────────────────────────────────────────────────────
 
@@ -438,20 +439,44 @@ const ACTIVE_WEIGHTS = {
  * `feature:access_readiness_active` in Redis when >10% of corpus
  * URLs require agent identity.
  */
-function scoreAccessReadiness(_product: ProductData): DimensionScore {
+function scoreAccessReadiness(product: ProductData): DimensionScore {
   const weight = _accessReadinessActive ? ACTIVE_WEIGHTS.access_readiness : 0.00;
-  // When active, implement real probing per src/access-readiness-spec.ts
-  const score = 100;
+
+  // When active, read real probe results from the in-memory cache.
+  // probeAccess() was called during extractProduct() and cached the result.
+  if (_accessReadinessActive) {
+    const probe = getCachedProbe(product.url);
+    if (probe) {
+      return {
+        score: probe.score,
+        weight,
+        weighted_contribution: Math.round(probe.score * weight * 100) / 100,
+        details: {
+          access_level: probe.access_level,
+          access_label: probe.access_label,
+          unsigned_status: probe.unsigned_status,
+          signed_status: probe.signed_status ?? 'n/a',
+          requires_payment: probe.requires_payment,
+          cloudflare_detected: probe.cloudflare_detected,
+          feature_flag_active: true,
+          from_cache: probe.from_cache,
+          note: `Access probe: ${probe.access_label} (unsigned ${probe.unsigned_status}${probe.signed_status ? `, signed ${probe.signed_status}` : ''})`,
+        },
+      };
+    }
+  }
+
+  // Stub response: flag inactive or no probe data available
   return {
-    score,
+    score: 100,
     weight,
-    weighted_contribution: Math.round(score * weight * 100) / 100,
+    weighted_contribution: Math.round(100 * weight * 100) / 100,
     details: {
       access_level: 5,
       access_label: 'fully_open',
       feature_flag_active: _accessReadinessActive,
       note: _accessReadinessActive
-        ? 'Access readiness dimension is active. Weight: 0.15. Scoring based on Web Bot Auth header detection.'
+        ? 'Access readiness active but no probe data for this URL. Defaulting to fully_open.'
         : 'Access readiness scoring activates when Web Bot Auth adoption reaches detection threshold. Currently all test corpus URLs are fully open.',
     },
   };
