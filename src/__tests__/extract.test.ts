@@ -24,12 +24,17 @@ const FIXTURES = join(import.meta.dirname, 'fixtures');
 const shopifyHtml = readFileSync(join(FIXTURES, 'shopify-product.html'), 'utf-8');
 const noSchemaHtml = readFileSync(join(FIXTURES, 'no-schema-product.html'), 'utf-8');
 
-function mockResponse(body: string, status = 200) {
+function mockResponse(body: string, status = 200, extraHeaders: Record<string, string> = {}) {
+  const headerMap = new Map(Object.entries(extraHeaders).map(([k, v]) => [k.toLowerCase(), v]));
   return {
     ok: status >= 200 && status < 300,
     status,
     statusText: status === 200 ? 'OK' : status === 403 ? 'Forbidden' : 'Not Found',
     text: () => Promise.resolve(body),
+    headers: {
+      has: (name: string) => headerMap.has(name.toLowerCase()),
+      get: (name: string) => headerMap.get(name.toLowerCase()) ?? null,
+    },
   };
 }
 

@@ -145,6 +145,17 @@ app.use(createAuthMiddleware(redis));
 const cache = new EnrichmentCache();
 const freeTier = new FreeTierTracker();
 
+// Load access_readiness feature flag from Redis on cold start
+import { setAccessReadinessActive } from '../src/agent-ready.js';
+if (redis) {
+  redis.get<string>('feature:access_readiness_active').then(val => {
+    if (val === 'true') {
+      setAccessReadinessActive(true);
+      console.log('[ShopGraph] Access readiness dimension ACTIVE (feature flag)');
+    }
+  }).catch(() => {});
+}
+
 function getPayments() {
   return new PaymentManager(
     process.env.STRIPE_SECRET_KEY || process.env.STRIPE_TEST_SECRET_KEY

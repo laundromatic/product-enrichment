@@ -62,6 +62,14 @@ export interface MethodRatioStats {
   estimated_cost_cents: number; // LLM ~0.1c, hybrid ~0.5c, schema_org 0
 }
 
+export interface AccessSignals {
+  url: string;
+  status: number;
+  requiresAuth: boolean;
+  requiresPayment: boolean;
+  hasSignatureInput: boolean;
+}
+
 export interface BatchResult {
   url: string;
   vertical: string;
@@ -73,6 +81,7 @@ export interface BatchResult {
   error: string | null;
   duration_ms: number;
   field_results?: FieldResults;
+  access_signals?: AccessSignals;
 }
 
 export interface LastBatch {

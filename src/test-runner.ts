@@ -9,7 +9,7 @@
  * - Corpus verification: periodically re-verifies all URLs
  */
 
-import { extractProduct, extractBasicFromUrl, fetchPage } from './extract.js';
+import { extractProduct, extractBasicFromUrl, fetchPage, getLastAccessSignals } from './extract.js';
 import type { ProductData, CorpusEntry } from './types.js';
 import {
   type BatchResult,
@@ -225,6 +225,9 @@ async function extractOne(entry: CorpusEntry): Promise<BatchResult> {
       }
     }
 
+    // Capture Web Bot Auth signals from the last fetch
+    const accessSignals = getLastAccessSignals();
+
     return {
       url: entry.url,
       vertical: entry.vertical,
@@ -236,8 +239,12 @@ async function extractOne(entry: CorpusEntry): Promise<BatchResult> {
       error: null,
       duration_ms: Date.now() - start,
       field_results: fieldResults,
+      access_signals: accessSignals ?? undefined,
     };
   } catch (err: unknown) {
+    // Still capture access signals on failure (403s are the signal we care about)
+    const accessSignals = getLastAccessSignals();
+
     return {
       url: entry.url,
       vertical: entry.vertical,
@@ -247,6 +254,7 @@ async function extractOne(entry: CorpusEntry): Promise<BatchResult> {
       product_name: null,
       error: err instanceof Error ? err.message : String(err),
       duration_ms: Date.now() - start,
+      access_signals: accessSignals ?? undefined,
     };
   }
 }
@@ -677,6 +685,59 @@ export async function runDailyTests(corpus: CorpusEntry[]): Promise<{
       await storeAlert(redis, updatedStats.overall_success_rate, offset);
       if (updatedStats.overall_success_rate < ALERT_THRESHOLD) {
         await fireWebhookAlert(updatedStats.overall_success_rate);
+      }
+
+      // ── Web Bot Auth adoption monitoring (LAU-296) ──────────────
+      // Track how many URLs require agent identity. When >10% of the
+      // corpus requires it, activate the access_readiness dimension.
+      const authSignalCount = results.filter(
+        r => r.access_signals?.requiresAuth || r.access_signals?.requiresPayment
+      ).length;
+      if (authSignalCount > 0) {
+        await redis.incrby('stats:web_bot_auth_detected', authSignalCount);
+      }
+      await redis.set('stats:web_bot_auth_batch', {
+        batch_detected: authSignalCount,
+        batch_total: results.length,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Check cumulative threshold against total tested
+      const totalAuthDetected = await redis.get<number>('stats:web_bot_auth_detected') ?? 0;
+      const authPercentage = updatedStats.total_tested > 0
+        ? (totalAuthDetected / updatedStats.total_tested) * 100
+        : 0;
+
+      const WEB_BOT_AUTH_THRESHOLD = 10; // percent
+      const authFlagKey = 'feature:access_readiness_active';
+      const alreadyActive = await redis.get<string>(authFlagKey);
+
+      if (authPercentage >= WEB_BOT_AUTH_THRESHOLD && alreadyActive !== 'true') {
+        // Threshold crossed — activate the feature flag
+        await redis.set(authFlagKey, 'true');
+        console.error(
+          `[ShopGraph] ACCESS READINESS ACTIVATED: ${authPercentage.toFixed(1)}% of URLs ` +
+          `(${totalAuthDetected}/${updatedStats.total_tested}) require Web Bot Auth. ` +
+          `Feature flag '${authFlagKey}' set to true.`
+        );
+        // Fire webhook alert
+        const webhookUrl = process.env.ALERT_WEBHOOK_URL;
+        if (webhookUrl) {
+          await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              service: 'shopgraph',
+              alert: 'web_bot_auth_threshold_crossed',
+              percentage: authPercentage,
+              detected: totalAuthDetected,
+              total_tested: updatedStats.total_tested,
+              threshold: WEB_BOT_AUTH_THRESHOLD,
+              action_required: 'Activate access_readiness dimension: bump weight from 0.00 to 0.15 in src/agent-ready.ts',
+              timestamp: new Date().toISOString(),
+            }),
+          }).catch(() => {});
+        }
       }
 
       // Record cron run timestamp

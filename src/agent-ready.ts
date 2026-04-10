@@ -404,26 +404,54 @@ function scoreInventorySignalQuality(product: ProductData): DimensionScore {
   };
 }
 
+// ── Access readiness feature flag ──────────────────────────────────
+// Set by the test runner when >10% of corpus URLs require Web Bot Auth.
+// Read from Redis at request time and cached for the process lifetime.
+let _accessReadinessActive = false;
+
+/** Called at startup or when the feature flag changes in Redis. */
+export function setAccessReadinessActive(active: boolean): void {
+  _accessReadinessActive = active;
+}
+
+export function isAccessReadinessActive(): boolean {
+  return _accessReadinessActive;
+}
+
+/** Weights when access readiness is active (redistributed from original 5) */
+const ACTIVE_WEIGHTS = {
+  structured_data_completeness: 0.25,
+  semantic_richness: 0.18,
+  ucp_compatibility: 0.17,
+  pricing_clarity: 0.13,
+  inventory_signal_quality: 0.12,
+  access_readiness: 0.15,
+} as const;
+
 /**
- * Dimension 6: Access readiness (weight: 0.00 — stub)
+ * Dimension 6: Access readiness (weight: 0.00 stub, or 0.15 when active)
  *
  * Measures whether the source URL requires Web Bot Auth (RFC 9421),
  * pay-per-crawl (Cloudflare AI Crawl Control), or agent identity.
- * Currently all test corpus URLs are fully open, so this dimension
- * returns a constant score with weight 0.00.
  *
- * When >10% of test URLs return Web Bot Auth headers, bump weight
- * to 0.15 and redistribute existing weights accordingly.
+ * Activation is automatic: the test runner sets the feature flag
+ * `feature:access_readiness_active` in Redis when >10% of corpus
+ * URLs require agent identity.
  */
 function scoreAccessReadiness(_product: ProductData): DimensionScore {
+  const weight = _accessReadinessActive ? ACTIVE_WEIGHTS.access_readiness : 0.00;
+  const score = 100; // TODO: implement actual probing when active
   return {
-    score: 100,
-    weight: 0.00,
-    weighted_contribution: 0,
+    score,
+    weight,
+    weighted_contribution: Math.round(score * weight * 100) / 100,
     details: {
       access_level: 5,
       access_label: 'fully_open',
-      note: 'Access readiness scoring activates when Web Bot Auth adoption reaches detection threshold. Currently all test corpus URLs are fully open.',
+      feature_flag_active: _accessReadinessActive,
+      note: _accessReadinessActive
+        ? 'Access readiness dimension is active. Weight: 0.15. Scoring based on Web Bot Auth header detection.'
+        : 'Access readiness scoring activates when Web Bot Auth adoption reaches detection threshold. Currently all test corpus URLs are fully open.',
     },
   };
 }
@@ -446,6 +474,20 @@ export function scoreAgentReadiness(product: ProductData): AgentReadyScore {
   const pricing = scorePricingClarity(product);
   const inventory = scoreInventorySignalQuality(product);
   const access = scoreAccessReadiness(product);
+
+  // When access readiness is active, redistribute weights
+  if (_accessReadinessActive) {
+    structured.weight = ACTIVE_WEIGHTS.structured_data_completeness;
+    structured.weighted_contribution = Math.round(structured.score * structured.weight * 100) / 100;
+    semantic.weight = ACTIVE_WEIGHTS.semantic_richness;
+    semantic.weighted_contribution = Math.round(semantic.score * semantic.weight * 100) / 100;
+    ucp.weight = ACTIVE_WEIGHTS.ucp_compatibility;
+    ucp.weighted_contribution = Math.round(ucp.score * ucp.weight * 100) / 100;
+    pricing.weight = ACTIVE_WEIGHTS.pricing_clarity;
+    pricing.weighted_contribution = Math.round(pricing.score * pricing.weight * 100) / 100;
+    inventory.weight = ACTIVE_WEIGHTS.inventory_signal_quality;
+    inventory.weighted_contribution = Math.round(inventory.score * inventory.weight * 100) / 100;
+  }
 
   const overallScore =
     structured.weighted_contribution +

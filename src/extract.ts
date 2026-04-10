@@ -380,6 +380,31 @@ async function extractFromHtmlContent(html: string, url: string, options?: Enric
   }, options);
 }
 
+// ── Web Bot Auth detection ────────────────────────────────────────
+
+/** Headers that signal Web Bot Auth / agent identity requirements */
+const WEB_BOT_AUTH_HEADERS = [
+  'www-authenticate',
+  'signature-input',
+  'x-robots-tag',
+];
+
+/** Per-fetch result tracking for Web Bot Auth signals */
+export interface FetchAccessSignals {
+  url: string;
+  status: number;
+  requiresAuth: boolean;
+  requiresPayment: boolean;
+  hasSignatureInput: boolean;
+}
+
+/** Last fetch's access signals — read by test runner after each extraction */
+let _lastAccessSignals: FetchAccessSignals | null = null;
+
+export function getLastAccessSignals(): FetchAccessSignals | null {
+  return _lastAccessSignals;
+}
+
 /**
  * Fetch a page with realistic headers, RFC 9421 signatures, and timeout.
  */
@@ -406,6 +431,20 @@ export async function fetchPage(url: string): Promise<string> {
       signal: controller.signal,
       redirect: 'follow',
     });
+
+    // Detect Web Bot Auth signals in response headers
+    const hasWwwAuth = response.headers.has('www-authenticate');
+    const hasSigInput = response.headers.has('signature-input');
+    const is402 = response.status === 402;
+    const is401WithAuth = response.status === 401 && hasWwwAuth;
+
+    _lastAccessSignals = {
+      url,
+      status: response.status,
+      requiresAuth: is401WithAuth || hasSigInput,
+      requiresPayment: is402,
+      hasSignatureInput: hasSigInput,
+    };
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
