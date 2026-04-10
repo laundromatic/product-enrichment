@@ -120,15 +120,114 @@ export function getFieldConfidence(baseline: number, fieldName: string): number 
 
 export interface EnrichmentOptions {
   strict_confidence_threshold?: number | null;
+  force_refresh?: boolean;
+  minimum_confidence?: number | null;
   format?: 'default' | 'ucp';
   include_score?: boolean;
+}
+
+// ── Volatility & decay ────────────────────────────────────────────
+export type VolatilityClass = 'real_time' | 'volatile' | 'slow_change' | 'stable';
+
+/** Half-life in seconds for each volatility class */
+export const VOLATILITY_HALF_LIFE: Record<VolatilityClass, number> = {
+  real_time: 30 * 60,        // 30 minutes
+  volatile: 2 * 60 * 60,     // 2 hours
+  slow_change: 24 * 60 * 60, // 24 hours
+  stable: 7 * 24 * 60 * 60,  // 7 days
+};
+
+/** Map each product field to its volatility class */
+export const FIELD_VOLATILITY: Record<string, VolatilityClass> = {
+  price: 'real_time',
+  availability: 'real_time',
+  product_name: 'slow_change',
+  brand: 'stable',
+  description: 'slow_change',
+  categories: 'stable',
+  image_urls: 'slow_change',
+  primary_image_url: 'slow_change',
+  color: 'stable',
+  material: 'stable',
+  dimensions: 'stable',
+};
+
+export interface FieldFreshness {
+  volatility_class: VolatilityClass;
+  age_seconds: number;
+  decayed: boolean;
+  original_confidence?: number;
+}
+
+/**
+ * Compute decayed confidence for a field based on time since extraction.
+ * Formula: base * (0.5 ^ (age / half_life))
+ */
+export function decayConfidence(baseConfidence: number, fieldName: string, ageSeconds: number): number {
+  const volatility = FIELD_VOLATILITY[fieldName] ?? 'slow_change';
+  const halfLife = VOLATILITY_HALF_LIFE[volatility];
+  return baseConfidence * Math.pow(0.5, ageSeconds / halfLife);
+}
+
+/**
+ * Build field_freshness block for a set of fields given extraction age.
+ */
+export function buildFieldFreshness(
+  fieldConfidence: Record<string, number>,
+  ageSeconds: number,
+  decayThreshold: number = 0.01,
+): Record<string, FieldFreshness> {
+  const freshness: Record<string, FieldFreshness> = {};
+  for (const [field, originalConf] of Object.entries(fieldConfidence)) {
+    const volatility = FIELD_VOLATILITY[field] ?? 'slow_change';
+    const decayed = decayConfidence(originalConf, field, ageSeconds);
+    const isDecayed = decayed < originalConf * 0.9; // >10% loss = decayed
+    freshness[field] = {
+      volatility_class: volatility,
+      age_seconds: ageSeconds,
+      decayed: isDecayed,
+      ...(isDecayed ? { original_confidence: originalConf } : {}),
+    };
+  }
+  return freshness;
+}
+
+/**
+ * Apply decay to all field confidence values based on extraction age.
+ */
+export function applyDecay(
+  fieldConfidence: Record<string, number>,
+  ageSeconds: number,
+): Record<string, number> {
+  const decayed: Record<string, number> = {};
+  for (const [field, conf] of Object.entries(fieldConfidence)) {
+    decayed[field] = decayConfidence(conf, field, ageSeconds);
+  }
+  return decayed;
+}
+
+/**
+ * Check if any field's decayed confidence falls below a threshold.
+ */
+export function anyFieldBelowThreshold(
+  fieldConfidence: Record<string, number>,
+  ageSeconds: number,
+  threshold: number,
+): boolean {
+  for (const [field, conf] of Object.entries(fieldConfidence)) {
+    if (decayConfidence(conf, field, ageSeconds) < threshold) return true;
+  }
+  return false;
 }
 
 export interface ShopGraphMetadata {
   source_url: string;
   extraction_timestamp: string;
+  response_timestamp: string;
   extraction_method: string;
+  data_source: 'live' | 'cache';
   field_confidence: Record<string, number>;
+  field_freshness?: Record<string, FieldFreshness>;
   confidence_method: string;
 }
 
@@ -138,6 +237,16 @@ export interface ExtractionStatus {
   threshold?: number;
   message: string;
 }
+
+// ── Credit pricing for execution modes ────────────────────────────
+export const CREDIT_MULTIPLIERS = {
+  standard: 1,      // Live extraction, no cache
+  cache_hit: 0.25,  // Served from cache
+  force_refresh: 3, // Explicit cache bypass
+  auto_refresh: 2,  // minimum_confidence triggered re-extraction
+} as const;
+
+export type CreditMode = keyof typeof CREDIT_MULTIPLIERS;
 
 // ── UCP (Universal Commerce Protocol) types ─────────────────────────
 

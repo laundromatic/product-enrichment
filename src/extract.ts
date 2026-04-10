@@ -1,6 +1,8 @@
-import type { ProductData, EnrichmentOptions, ShopGraphMetadata, ExtractionStatus } from './types.js';
+import type { ProductData, EnrichmentOptions, ShopGraphMetadata, ExtractionStatus, FieldFreshness } from './types.js';
+import { buildFieldFreshness, applyDecay } from './types.js';
 import { extractSchemaOrg } from './schema-org.js';
 import { extractWithLlm } from './llm-extract.js';
+import { signRequest } from './agent-identity.js';
 
 const USER_AGENT =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
@@ -23,22 +25,43 @@ function needsBrowserFallback(result: ProductData): boolean {
 
 /**
  * Apply _shopgraph metadata and optional threshold scrubbing to a product result.
+ * @param fromCache - true if this result is being served from cache
  */
-function applyThresholdAndMetadata(
+export function applyThresholdAndMetadata(
   product: ProductData,
   options?: EnrichmentOptions,
+  fromCache: boolean = false,
 ): ProductData {
+  const now = new Date();
+  const extractionTime = new Date(product.extracted_at);
+  const ageSeconds = Math.max(0, Math.floor((now.getTime() - extractionTime.getTime()) / 1000));
+
+  // Compute decayed confidence when serving from cache
+  const originalConfidence = { ...product.confidence.per_field };
+  const effectiveConfidence = fromCache && ageSeconds > 0
+    ? applyDecay(originalConfidence, ageSeconds)
+    : originalConfidence;
+
+  // Build field_freshness block (always present, shows decay state)
+  const fieldFreshness: Record<string, FieldFreshness> | undefined =
+    fromCache && ageSeconds > 0
+      ? buildFieldFreshness(originalConfidence, ageSeconds)
+      : undefined;
+
   // Always attach _shopgraph metadata
   const metadata: ShopGraphMetadata = {
     source_url: product.url,
     extraction_timestamp: product.extracted_at,
+    response_timestamp: now.toISOString(),
     extraction_method: product.extraction_method,
-    field_confidence: { ...product.confidence.per_field },
+    data_source: fromCache ? 'cache' : 'live',
+    field_confidence: effectiveConfidence,
+    ...(fieldFreshness ? { field_freshness: fieldFreshness } : {}),
     confidence_method: 'tier_baseline',
   };
   product._shopgraph = metadata;
 
-  // Apply threshold scrubbing if requested
+  // Apply threshold scrubbing against EFFECTIVE (decayed) confidence
   const threshold = options?.strict_confidence_threshold;
   if (threshold != null && threshold > 0) {
     const status: Record<string, ExtractionStatus> = {};
@@ -54,7 +77,7 @@ function applyThresholdAndMetadata(
       dimensions: { nullValue: null, property: 'dimensions' },
     };
 
-    for (const [fieldName, conf] of Object.entries(product.confidence.per_field)) {
+    for (const [fieldName, conf] of Object.entries(effectiveConfidence)) {
       if (conf < threshold && scrubFields[fieldName]) {
         status[fieldName] = {
           status: 'below_threshold',
@@ -358,18 +381,27 @@ async function extractFromHtmlContent(html: string, url: string, options?: Enric
 }
 
 /**
- * Fetch a page with realistic headers and timeout.
+ * Fetch a page with realistic headers, RFC 9421 signatures, and timeout.
  */
 export async function fetchPage(url: string): Promise<string> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
+  // Sign the outbound request with Ed25519 (RFC 9421)
+  let sigHeaders: Record<string, string> = {};
+  try {
+    sigHeaders = signRequest('GET', url);
+  } catch {
+    // Signing failure should not block extraction
+  }
+
   try {
     const response = await fetch(url, {
       headers: {
-        'User-Agent': USER_AGENT,
+        'User-Agent': 'ShopGraph/1.0',
         Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
+        ...sigHeaders,
       },
       signal: controller.signal,
       redirect: 'follow',

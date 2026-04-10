@@ -1,8 +1,8 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import type { ProductData, EnrichmentResult, MppChallenge, EnrichmentOptions } from './types.js';
-import { TOOL_PRICING, FREE_TIER } from './types.js';
-import { extractProduct, extractFromRawHtml, extractBasicFromUrl } from './extract.js';
+import type { ProductData, EnrichmentResult, MppChallenge, EnrichmentOptions, CreditMode } from './types.js';
+import { TOOL_PRICING, FREE_TIER, CREDIT_MULTIPLIERS, anyFieldBelowThreshold } from './types.js';
+import { extractProduct, extractFromRawHtml, extractBasicFromUrl, applyThresholdAndMetadata } from './extract.js';
 import { mapToUcp } from './ucp-mapper.js';
 import { scoreAgentReadiness } from './agent-ready.js';
 import { EnrichmentCache } from './cache.js';
@@ -36,6 +36,10 @@ export function createServer(
     payment_method_id: z.string().optional().describe('Stripe payment method ID for MPP payment'),
     strict_confidence_threshold: z.number().min(0).max(1).optional()
       .describe('Fields below this confidence will be nulled with explanation. Default: off.'),
+    force_refresh: z.boolean().optional()
+      .describe('Bypass cache entirely. Always triggers live extraction. Costs 3x credits.'),
+    minimum_confidence: z.number().min(0).max(1).optional()
+      .describe('Auto-refresh if any cached field\'s DECAYED confidence falls below this threshold. Costs 2x credits when refresh triggers, 0.25x on cache hit.'),
     format: z.enum(['default', 'ucp']).optional().default('default')
       .describe('Output format. "ucp" returns UCP line_item format. Default: "default".'),
     include_score: z.boolean().optional().describe('Include agent-readiness score in response.'),
@@ -52,9 +56,11 @@ export function createServer(
     'Extract comprehensive product data from a URL including name, price, brand, images, availability, and more. Uses schema.org structured data when available, with LLM fallback. Costs $0.02 per call (cached results are free).',
     enrichParams,
     toolAnnotations,
-    async ({ url, payment_method_id, strict_confidence_threshold, format, include_score }) => {
+    async ({ url, payment_method_id, strict_confidence_threshold, force_refresh, minimum_confidence, format, include_score }) => {
       const options: EnrichmentOptions = {
         strict_confidence_threshold: strict_confidence_threshold ?? undefined,
+        force_refresh: force_refresh ?? undefined,
+        minimum_confidence: minimum_confidence ?? undefined,
         format: format ?? 'default',
         include_score: include_score ?? undefined,
       };
@@ -68,9 +74,11 @@ export function createServer(
     `Extract basic product attributes from a URL (name, price, brand, availability). Faster and cheaper than enrich_product. ${FREE_TIER.MONTHLY_LIMIT} free calls/month — no payment needed. Paid: $0.01 per call after free tier.`,
     enrichParams,
     toolAnnotations,
-    async ({ url, payment_method_id, strict_confidence_threshold, format, include_score }) => {
+    async ({ url, payment_method_id, strict_confidence_threshold, force_refresh, minimum_confidence, format, include_score }) => {
       const options: EnrichmentOptions = {
         strict_confidence_threshold: strict_confidence_threshold ?? undefined,
+        force_refresh: force_refresh ?? undefined,
+        minimum_confidence: minimum_confidence ?? undefined,
         format: format ?? 'default',
         include_score: include_score ?? undefined,
       };
@@ -88,14 +96,20 @@ export function createServer(
       payment_method_id: z.string().optional().describe('Stripe payment method ID for MPP payment'),
       strict_confidence_threshold: z.number().min(0).max(1).optional()
         .describe('Fields below this confidence will be nulled with explanation. Default: off.'),
+      force_refresh: z.boolean().optional()
+        .describe('Bypass cache entirely. Always triggers live extraction. Costs 3x credits.'),
+      minimum_confidence: z.number().min(0).max(1).optional()
+        .describe('Auto-refresh if any cached field\'s DECAYED confidence falls below this threshold.'),
       format: z.enum(['default', 'ucp']).optional().default('default')
         .describe('Output format. "ucp" returns UCP line_item format. Default: "default".'),
       include_score: z.boolean().optional().describe('Include agent-readiness score in response.'),
     },
     toolAnnotations,
-    async ({ html, url, payment_method_id, strict_confidence_threshold, format, include_score }) => {
+    async ({ html, url, payment_method_id, strict_confidence_threshold, force_refresh, minimum_confidence, format, include_score }) => {
       const options: EnrichmentOptions = {
         strict_confidence_threshold: strict_confidence_threshold ?? undefined,
+        force_refresh: force_refresh ?? undefined,
+        minimum_confidence: minimum_confidence ?? undefined,
         format: format ?? 'default',
         include_score: include_score ?? undefined,
       };
@@ -209,7 +223,35 @@ function formatResult(result: object & { product: ProductData; receipt?: unknown
 }
 
 /**
- * Handle URL-based enrichment with payment gating, free tier, and caching.
+ * Determine credit mode based on cache state and execution flags.
+ */
+function determineCreditMode(
+  cached: ProductData | undefined,
+  options?: EnrichmentOptions,
+): { mode: CreditMode; shouldExtract: boolean } {
+  // force_refresh always extracts
+  if (options?.force_refresh) {
+    return { mode: 'force_refresh', shouldExtract: true };
+  }
+
+  if (!cached) {
+    return { mode: 'standard', shouldExtract: true };
+  }
+
+  // Check minimum_confidence against decayed values
+  if (options?.minimum_confidence != null) {
+    const extractionTime = new Date(cached.extracted_at);
+    const ageSeconds = Math.max(0, Math.floor((Date.now() - extractionTime.getTime()) / 1000));
+    if (anyFieldBelowThreshold(cached.confidence.per_field, ageSeconds, options.minimum_confidence)) {
+      return { mode: 'auto_refresh', shouldExtract: true };
+    }
+  }
+
+  return { mode: 'cache_hit', shouldExtract: false };
+}
+
+/**
+ * Handle URL-based enrichment with payment gating, free tier, caching, and execution flags.
  */
 async function handleEnrichment(
   toolName: 'enrich_product' | 'enrich_basic',
@@ -221,8 +263,16 @@ async function handleEnrichment(
   options?: EnrichmentOptions,
 ): Promise<ToolResponse> {
   const cached = cache.get(url);
-  if (cached) {
-    const result: EnrichmentResult = { product: cached, cached: true };
+  const { mode, shouldExtract } = determineCreditMode(cached, options);
+
+  // Serve from cache when appropriate (with decay applied)
+  if (!shouldExtract && cached) {
+    const product = applyThresholdAndMetadata({ ...cached }, options, true);
+    const result: EnrichmentResult & { credit_mode: CreditMode } = {
+      product,
+      cached: true,
+      credit_mode: mode,
+    };
     return formatResult(result, options);
   }
 
@@ -248,9 +298,10 @@ async function handleEnrichment(
       const hasData = product.product_name !== null;
       tracker.increment(clientId);
       cache.set(url, product);
-      const result: EnrichmentResult & { free_tier: { used: number; limit: number }; upgrade_hint?: string } = {
+      const result: EnrichmentResult & { free_tier: { used: number; limit: number }; upgrade_hint?: string; credit_mode: CreditMode } = {
         product,
         cached: false,
+        credit_mode: 'standard',
         free_tier: { used: usage + 1, limit: FREE_TIER.MONTHLY_LIMIT },
         ...(hasData ? {} : { upgrade_hint: 'No Schema.org data found on this page. Use enrich_product ($0.02) for LLM-powered extraction.' }),
       };
@@ -261,6 +312,7 @@ async function handleEnrichment(
 
   if (!paymentMethodId) {
     const challenge: MppChallenge = payments.createChallenge(toolName);
+    const creditMultiplier = CREDIT_MULTIPLIERS[mode];
     const freeTierInfo = isFreeTierEligible
       ? { free_tier_exhausted: true, used: tracker.getUsage(clientId), limit: FREE_TIER.MONTHLY_LIMIT }
       : undefined;
@@ -270,9 +322,11 @@ async function handleEnrichment(
         text: JSON.stringify({
           error: 'payment_required',
           status: 402,
-          challenge,
+          challenge: { ...challenge, amount: Math.ceil(challenge.amount * creditMultiplier) },
+          credit_mode: mode,
+          credit_multiplier: creditMultiplier,
           ...freeTierInfo,
-          message: `Payment required. Include a payment_method_id to proceed. Cost: $${(TOOL_PRICING[toolName] / 100).toFixed(2)}`,
+          message: `Payment required. Include a payment_method_id to proceed. Cost: $${((TOOL_PRICING[toolName] * creditMultiplier) / 100).toFixed(2)} (${mode})`,
         }, null, 2),
       }],
       isError: true,
@@ -306,7 +360,12 @@ async function handleEnrichment(
   }
 
   cache.set(url, product);
-  const result: EnrichmentResult = { product, receipt, cached: false };
+  const result: EnrichmentResult & { credit_mode: CreditMode } = {
+    product,
+    receipt,
+    cached: false,
+    credit_mode: mode,
+  };
   return formatResult(result, options);
 }
 
@@ -323,12 +382,20 @@ async function handleHtmlEnrichment(
   options?: EnrichmentOptions,
 ): Promise<ToolResponse> {
   const cached = cache.get(url);
-  if (cached) {
-    const result: EnrichmentResult = { product: cached, cached: true };
+  const { mode, shouldExtract } = determineCreditMode(cached, options);
+
+  if (!shouldExtract && cached) {
+    const product = applyThresholdAndMetadata({ ...cached }, options, true);
+    const result: EnrichmentResult & { credit_mode: CreditMode } = {
+      product,
+      cached: true,
+      credit_mode: mode,
+    };
     return formatResult(result, options);
   }
 
   if (!paymentMethodId) {
+    const creditMultiplier = CREDIT_MULTIPLIERS[mode];
     const challenge: MppChallenge = payments.createChallenge('enrich_html');
     return {
       content: [{
@@ -336,8 +403,9 @@ async function handleHtmlEnrichment(
         text: JSON.stringify({
           error: 'payment_required',
           status: 402,
-          challenge,
-          message: `Payment required. Include a payment_method_id to proceed. Cost: $${(TOOL_PRICING.enrich_html / 100).toFixed(2)}`,
+          challenge: { ...challenge, amount: Math.ceil(challenge.amount * creditMultiplier) },
+          credit_mode: mode,
+          message: `Payment required. Include a payment_method_id to proceed. Cost: $${((TOOL_PRICING.enrich_html * creditMultiplier) / 100).toFixed(2)} (${mode})`,
         }, null, 2),
       }],
       isError: true,
@@ -367,6 +435,11 @@ async function handleHtmlEnrichment(
   }
 
   cache.set(url, product);
-  const result: EnrichmentResult = { product, receipt, cached: false };
+  const result: EnrichmentResult & { credit_mode: CreditMode } = {
+    product,
+    receipt,
+    cached: false,
+    credit_mode: mode,
+  };
   return formatResult(result, options);
 }

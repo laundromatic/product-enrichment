@@ -1,4 +1,4 @@
-// ShopGraph Playground — single URL extraction
+// ShopGraph Playground — single URL extraction with confidence scoring & execution flags
 (function () {
   var state = {
     result: null,
@@ -6,6 +6,23 @@
   };
 
   function $(id) { return document.getElementById(id); }
+
+  function getOptions() {
+    var opts = {};
+    var thresholdEl = $('pg-threshold');
+    if (thresholdEl && thresholdEl.value && parseFloat(thresholdEl.value) > 0) {
+      opts.strict_confidence_threshold = parseFloat(thresholdEl.value);
+    }
+    var forceRefreshEl = $('pg-force-refresh');
+    if (forceRefreshEl && forceRefreshEl.checked) {
+      opts.force_refresh = true;
+    }
+    var minConfEl = $('pg-min-confidence');
+    if (minConfEl && minConfEl.value && parseFloat(minConfEl.value) > 0) {
+      opts.minimum_confidence = parseFloat(minConfEl.value);
+    }
+    return opts;
+  }
 
   function runPlayground() {
     var url = $('pg-url').value.trim();
@@ -22,10 +39,12 @@
     if (resultEl) resultEl.innerHTML = '';
     if ($('pg-error')) $('pg-error').style.display = 'none';
 
+    var body = Object.assign({ url: url }, getOptions());
+
     fetch('/api/enrich/basic', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: url }),
+      body: JSON.stringify(body),
     })
       .then(function (r) { return r.json(); })
       .then(function (data) {
@@ -46,6 +65,20 @@
       });
   }
 
+  function confColor(conf) {
+    if (conf === undefined || conf === null) return '#666';
+    if (conf >= 0.80) return '#22c55e';
+    if (conf >= 0.50) return '#eab308';
+    return '#ef4444';
+  }
+
+  function confBadgeClass(conf) {
+    if (conf === undefined || conf === null) return 'badge-gray';
+    if (conf >= 0.80) return 'badge-green';
+    if (conf >= 0.50) return 'badge-yellow';
+    return 'badge-red';
+  }
+
   function renderResult(data) {
     var container = $('pg-result');
     if (!data || !container) return;
@@ -59,37 +92,85 @@
     var shopgraph = product._shopgraph || {};
     var confidence = product.confidence || {};
     var fieldConf = shopgraph.field_confidence || confidence.per_field || {};
+    var fieldFreshness = shopgraph.field_freshness || {};
     var method = product.extraction_method || 'unknown';
-    var cached = data.cached;
+    var dataSource = shopgraph.data_source || (data.cached ? 'cache' : 'live');
+    var creditMode = data.credit_mode || 'standard';
+    var extractionStatus = product._extraction_status || {};
 
-    // Build result display
-    var html = '<div style="margin-bottom:12px">';
-    if (confidence.overall) html += '<span class="badge badge-green">Confidence: ' + (confidence.overall * 100).toFixed(0) + '%</span> ';
-    html += '<span class="badge badge-blue">' + method + '</span> ';
-    if (cached) html += '<span class="badge badge-yellow">cached</span> ';
-    if (data.free_tier) html += '<span class="badge badge-gray">' + data.free_tier.used + '/' + data.free_tier.limit + ' free</span>';
+    // Header badges
+    var html = '<div style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">';
+    if (confidence.overall) {
+      var oc = confBadgeClass(confidence.overall);
+      html += '<span class="badge ' + oc + '">Confidence: ' + (confidence.overall * 100).toFixed(0) + '%</span>';
+    }
+    html += '<span class="badge badge-blue">' + method + '</span>';
+
+    // Data source badge
+    if (dataSource === 'cache') {
+      html += '<span class="badge badge-yellow">cache</span>';
+    } else {
+      html += '<span class="badge badge-green">live</span>';
+    }
+
+    // Credit mode badge
+    if (creditMode !== 'standard') {
+      html += '<span class="badge badge-gray">' + creditMode + '</span>';
+    }
+
+    if (data.free_tier) {
+      html += '<span class="badge badge-gray">' + data.free_tier.used + '/' + data.free_tier.limit + ' free</span>';
+    }
     html += '</div>';
 
-    // Fields table
+    // Fields table with per-field confidence
     var fields = ['product_name', 'brand', 'price', 'description', 'availability', 'categories', 'image_urls'];
-    html += '<table style="width:100%;font-size:13px;border-collapse:collapse"><tbody>';
+    html += '<table style="width:100%;font-size:13px;border-collapse:collapse"><thead><tr style="border-bottom:2px solid #333">';
+    html += '<th style="padding:6px 8px;text-align:left;font-size:11px;color:#999;font-weight:600">FIELD</th>';
+    html += '<th style="padding:6px 8px;text-align:left;font-size:11px;color:#999;font-weight:600">VALUE</th>';
+    html += '<th style="padding:6px 8px;text-align:right;font-size:11px;color:#999;font-weight:600">CONFIDENCE</th>';
+    html += '<th style="padding:6px 8px;text-align:right;font-size:11px;color:#999;font-weight:600">FRESHNESS</th>';
+    html += '</tr></thead><tbody>';
+
     fields.forEach(function (f) {
       var val = product[f];
-      if (val === null || val === undefined) return;
+      var scrubbed = extractionStatus[f];
       var displayVal = val;
-      if (typeof val === 'object' && val.amount !== undefined) displayVal = (val.currency || '') + ' ' + val.amount;
-      if (Array.isArray(val)) displayVal = val.length + ' items';
-      if (typeof displayVal === 'string' && displayVal.length > 80) displayVal = displayVal.substring(0, 80) + '...';
+
+      if (scrubbed) {
+        displayVal = '<span style="color:#ef4444;font-style:italic" title="' + escapeHtml(scrubbed.message) + '">scrubbed (below threshold)</span>';
+      } else if (val === null || val === undefined) {
+        displayVal = '<span style="color:#666">--</span>';
+      } else if (typeof val === 'object' && val.amount !== undefined) {
+        displayVal = (val.currency || '') + ' ' + val.amount;
+      } else if (Array.isArray(val)) {
+        displayVal = val.length + ' items';
+      } else if (typeof displayVal === 'string' && displayVal.length > 80) {
+        displayVal = escapeHtml(displayVal.substring(0, 80)) + '...';
+      } else {
+        displayVal = escapeHtml(String(displayVal));
+      }
 
       var conf = fieldConf[f];
-      var confStr = conf !== undefined ? (conf * 100).toFixed(0) + '%' : '';
-      var confColor = conf >= 0.9 ? '#16a34a' : (conf >= 0.7 ? '#d97706' : '#dc2626');
-      if (conf === undefined) confColor = '#999';
+      var confStr = conf !== undefined ? (conf * 100).toFixed(1) + '%' : '';
+      var cc = confColor(conf);
 
-      html += '<tr style="border-bottom:1px solid #f0f0f0">';
+      // Freshness indicator
+      var freshness = fieldFreshness[f];
+      var freshnessStr = '';
+      if (freshness) {
+        if (freshness.decayed) {
+          freshnessStr = '<span style="color:#ef4444" title="Original: ' + ((freshness.original_confidence || 0) * 100).toFixed(1) + '%">decayed</span>';
+        } else {
+          freshnessStr = '<span style="color:#22c55e">fresh</span>';
+        }
+      }
+
+      html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.06)">';
       html += '<td style="padding:6px 8px;font-family:var(--font-mono);font-size:11px;font-weight:500;color:var(--color-text-secondary);width:140px">' + f + '</td>';
       html += '<td style="padding:6px 8px;max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + displayVal + '</td>';
-      html += '<td style="padding:6px 8px;text-align:right;font-weight:600;font-size:11px;color:' + confColor + ';width:50px">' + confStr + '</td>';
+      html += '<td style="padding:6px 8px;text-align:right;font-weight:600;font-size:11px;width:70px"><span style="color:' + cc + '">' + confStr + '</span></td>';
+      html += '<td style="padding:6px 8px;text-align:right;font-size:11px;width:70px">' + freshnessStr + '</td>';
       html += '</tr>';
     });
     html += '</tbody></table>';
@@ -103,7 +184,25 @@
   }
 
   function escapeHtml(str) {
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function updateThresholdDisplay() {
+    var el = $('pg-threshold');
+    var display = $('pg-threshold-val');
+    if (el && display) {
+      var val = parseFloat(el.value);
+      display.textContent = val > 0 ? (val * 100).toFixed(0) + '%' : 'Off';
+    }
+  }
+
+  function updateMinConfDisplay() {
+    var el = $('pg-min-confidence');
+    var display = $('pg-min-conf-val');
+    if (el && display) {
+      var val = parseFloat(el.value);
+      display.textContent = val > 0 ? (val * 100).toFixed(0) + '%' : 'Off';
+    }
   }
 
   function initPlayground() {
@@ -118,7 +217,24 @@
         if (e.key === 'Enter') runPlayground();
       });
     }
+
+    // Threshold slider
+    var thresholdEl = $('pg-threshold');
+    if (thresholdEl) {
+      thresholdEl.addEventListener('input', updateThresholdDisplay);
+      updateThresholdDisplay();
+    }
+
+    // Minimum confidence slider
+    var minConfEl = $('pg-min-confidence');
+    if (minConfEl) {
+      minConfEl.addEventListener('input', updateMinConfDisplay);
+      updateMinConfDisplay();
+    }
   }
+
+  // Export for external use
+  window.ShopGraphPlayground = { run: runPlayground };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initPlayground);

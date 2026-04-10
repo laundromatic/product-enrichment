@@ -12,6 +12,10 @@
   },
   "rewrites": [
     {
+      "source": "/.well-known/:path*",
+      "destination": "/api"
+    },
+    {
       "source": "/health",
       "destination": "/api"
     },

@@ -345,6 +345,23 @@ app.get('/api/dashboard/usage', async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// .well-known endpoints — agent identity (LAU-296)
+// ---------------------------------------------------------------------------
+import { getAgentCard, getSignaturesDirectory } from '../src/agent-identity.js';
+
+app.get('/.well-known/agent-card.json', (_req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.json(getAgentCard());
+});
+
+app.get('/.well-known/http-message-signatures-directory', (_req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.json(getSignaturesDirectory());
+});
+
+// ---------------------------------------------------------------------------
 // Routes
 // ---------------------------------------------------------------------------
 

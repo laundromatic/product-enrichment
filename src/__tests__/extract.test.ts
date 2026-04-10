@@ -165,7 +165,7 @@ describe('extractProduct', () => {
     await extractProduct('https://example.com/product');
     const fetchCall = mockFetch.mock.calls[0];
     const headers = fetchCall[1].headers;
-    expect(headers['User-Agent']).toContain('Chrome');
+    expect(headers['User-Agent']).toBe('ShopGraph/1.0');
   });
 });
 
