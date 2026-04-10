@@ -29,6 +29,7 @@ export interface AgentReadyScore {
     ucp_compatibility: DimensionScore;
     pricing_clarity: DimensionScore;
     inventory_signal_quality: DimensionScore;
+    access_readiness: DimensionScore;
   };
   scoring_version: string;
   methodology_url: string;
@@ -403,12 +404,40 @@ function scoreInventorySignalQuality(product: ProductData): DimensionScore {
   };
 }
 
+/**
+ * Dimension 6: Access readiness (weight: 0.00 — stub)
+ *
+ * Measures whether the source URL requires Web Bot Auth (RFC 9421),
+ * pay-per-crawl (Cloudflare AI Crawl Control), or agent identity.
+ * Currently all test corpus URLs are fully open, so this dimension
+ * returns a constant score with weight 0.00.
+ *
+ * When >10% of test URLs return Web Bot Auth headers, bump weight
+ * to 0.15 and redistribute existing weights accordingly.
+ */
+function scoreAccessReadiness(_product: ProductData): DimensionScore {
+  return {
+    score: 100,
+    weight: 0.00,
+    weighted_contribution: 0,
+    details: {
+      access_level: 5,
+      access_label: 'fully_open',
+      note: 'Access readiness scoring activates when Web Bot Auth adoption reaches detection threshold. Currently all test corpus URLs are fully open.',
+    },
+  };
+}
+
 // ── Main scoring function ───────────────────────────────────────────
 
 /**
- * Score a product's agent-readiness across 5 dimensions.
+ * Score a product's agent-readiness across 6 dimensions.
  *
  * Pure function — no API calls, no side effects. Just math on ProductData.
+ *
+ * Dimensions 1-5 carry all weight (sum to 1.0). Dimension 6 (access
+ * readiness) is a documented stub at weight 0.00 — present in the
+ * schema so consumers don't face a breaking change when it activates.
  */
 export function scoreAgentReadiness(product: ProductData): AgentReadyScore {
   const structured = scoreStructuredDataCompleteness(product);
@@ -416,13 +445,15 @@ export function scoreAgentReadiness(product: ProductData): AgentReadyScore {
   const ucp = scoreUcpCompatibility(product);
   const pricing = scorePricingClarity(product);
   const inventory = scoreInventorySignalQuality(product);
+  const access = scoreAccessReadiness(product);
 
   const overallScore =
     structured.weighted_contribution +
     semantic.weighted_contribution +
     ucp.weighted_contribution +
     pricing.weighted_contribution +
-    inventory.weighted_contribution;
+    inventory.weighted_contribution +
+    access.weighted_contribution;
 
   return {
     agent_readiness_score: Math.round(overallScore * 100) / 100,
@@ -432,6 +463,7 @@ export function scoreAgentReadiness(product: ProductData): AgentReadyScore {
       ucp_compatibility: ucp,
       pricing_clarity: pricing,
       inventory_signal_quality: inventory,
+      access_readiness: access,
     },
     scoring_version: SCORING_VERSION,
     methodology_url: METHODOLOGY_URL,
