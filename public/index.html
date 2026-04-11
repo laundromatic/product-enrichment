@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="ShopGraph handles the identity handshakes and returns UCP-compliant product data with transparent confidence scores, so your pipelines keep moving.">
-<title>ShopGraph — Authenticated Product Data Extraction</title>
+<meta name="description" content="Structured product data from the open web. Per-field confidence scores. REST API + MCP server. 500 free calls/month.">
+<title>ShopGraph — Structured Product Data from the Open Web</title>
 <link rel="icon" type="image/png" href="/icon.png">
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -16,14 +16,21 @@
     <div class="content-inner">
 
       <div class="hero">
-        <h1><strong>ShopGraph.</strong> Authenticated product data extraction.</h1>
-        <p class="subtitle">ShopGraph handles the identity handshakes and returns UCP-compliant product data with transparent confidence scores, so your pipelines keep moving.</p>
+        <h1>ShopGraph</h1>
+        <p class="subtitle">Structured product data from the open web. Per-field confidence scores. One schema, any merchant.</p>
+        <div class="hero-badges">
+          <span class="badge badge-blue">v1.0.1</span>
+          <span class="badge badge-green">REST API</span>
+          <span class="badge badge-green">MCP Server</span>
+          <span class="badge badge-gray">500 free calls/mo</span>
+        </div>
       </div>
 
       <!-- Playground -->
       <div class="playground">
         <div class="playground-header">
-          <span class="playground-label">Try it: 500 free calls/month · No signup</span>
+          <h3>Try it</h3>
+          <span style="font-size:13px;color:var(--color-text-secondary)">Paste any product URL. 500 free calls/month, no signup.</span>
         </div>
 
         <div class="playground-inputs" style="display:flex;gap:12px;align-items:flex-end">
@@ -64,26 +71,50 @@
         </div>
       </div>
 
-      <div class="feature-list">
-        <div class="feature-list-item">
-          <h3>Confidence Scoring</h3>
-          <p>Every extracted field includes a confidence score from 0.0 to 1.0 showing how it was derived. Set a threshold (e.g., 0.85) and the engine filters fields that fall below it. Your agents act on data they can verify, not data they have to trust.</p>
+      <hr>
+
+      <!-- Where does ShopGraph fit? -->
+      <h2>Where does ShopGraph fit?</h2>
+
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">&#128279;</div>
+          <h3>From a URL</h3>
+          <p>POST /api/enrich with any product URL. ShopGraph handles fetching, JS rendering, and extraction into a consistent schema. Every field includes a confidence score.</p>
         </div>
-        <div class="feature-list-item">
-          <h3>Native UCP Output</h3>
-          <p>Standardize your entire catalog pipeline. ShopGraph extracts complex variant matrices and instantly normalizes them into Universal Commerce Protocol JSON, strictly validated against the official ucp-schema. One schema for every merchant.</p>
+        <div class="card">
+          <div class="card-icon">&#128196;</div>
+          <h3>From HTML</h3>
+          <p>POST /api/enrich/html with raw HTML. Skip the fetch when you have your own scraping infrastructure. Same structured output, no redundant network calls.</p>
         </div>
-        <div class="feature-list-item">
-          <h3>AgentReady Scoring</h3>
-          <p>Deploy your agents with complete environmental awareness. ShopGraph evaluates target URLs across 6 dimensions of machine-readability and access readiness, providing a comprehensive 0-100 score on extraction viability.</p>
+        <div class="card">
+          <div class="card-icon">&#129302;</div>
+          <h3>From any agent</h3>
+          <p>Connect via MCP with one line of config. Paid calls settle through Stripe MPP or API key subscriptions. Add format=ucp for Universal Commerce Protocol output.</p>
         </div>
-        <div class="feature-list-item">
-          <h3>Self-Healing Fallbacks</h3>
-          <p>Maintain reliable data pipelines across complex B2B portals. ShopGraph automatically routes requests through an authenticated pipeline: Schema.org &rarr; LLM extraction &rarr; Headless Playwright rendering, ensuring maximum data retrieval while respecting CDN access protocols.</p>
+      </div>
+
+      <hr>
+
+      <h2>Get Started</h2>
+      <div class="card-grid">
+        <div class="card">
+          <a href="/install">
+            <h3>Installation &rarr;</h3>
+            <p>npm install, MCP config, API key setup, and your first curl request in under 2 minutes.</p>
+          </a>
         </div>
-        <div class="feature-list-item">
-          <h3>RFC 9421 Signature Compliance</h3>
-          <p>ShopGraph acts as an authenticated proxy, handling the cryptographic handshakes required by modern Cloudflare and GoDaddy AI security gates. Your agents present a verified RFC 9421 identity at the CDN layer. The same protocol commerce sites use to distinguish trusted automation from anonymous traffic.</p>
+        <div class="card">
+          <a href="/tools/api">
+            <h3>REST API Reference &rarr;</h3>
+            <p>Full endpoint documentation with request/response examples and authentication details.</p>
+          </a>
+        </div>
+        <div class="card">
+          <a href="/features">
+            <h3>Features &rarr;</h3>
+            <p>Confidence scoring, UCP output, AgentReady scoring, routing engine, and self-healing.</p>
+          </a>
         </div>
       </div>
 

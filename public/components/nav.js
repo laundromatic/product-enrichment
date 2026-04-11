@@ -18,7 +18,7 @@
         { label: 'Confidence Scoring', href: '/features/confidence' },
         { label: 'UCP Output', href: '/features/ucp' },
         { label: 'AgentReady Scoring', href: '/features/agentready' },
-        { label: 'Leaderboard', href: '/leaderboard' },
+        { label: 'Routing Engine', href: '/features/routing' },
         { label: 'Self-Healing', href: '/features/self-healing' },
       ],
     },
