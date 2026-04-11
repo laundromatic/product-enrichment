@@ -87,7 +87,7 @@ a:hover { color: var(--link-hover); text-decoration: underline; }
   font-family: var(--font-sans);
   font-size: 0.625rem;
   font-variation-settings: "wght" 500;
-  color: var(--text-faint);
+  color: rgba(0, 0, 0, 0.2);
   user-select: none;
   cursor: default;
   line-height: normal;
@@ -102,7 +102,7 @@ a:hover { color: var(--link-hover); text-decoration: underline; }
   font-family: var(--font-sans);
   font-size: 0.75rem;
   font-variation-settings: "wght" 450;
-  line-height: 1.8;
+  line-height: 1.5;
   color: rgba(0, 0, 0, 0.35);
   text-decoration: none;
   transition: color 0.15s ease, font-variation-settings 0.25s ease;
@@ -353,11 +353,9 @@ pre code {
 
 /* === TABLES === */
 table {
-  width: calc(100% + 8rem);
-  margin-left: -4rem;
+  width: 100%;
   border-collapse: collapse;
-  margin-top: 0.75rem;
-  margin-bottom: 0.75rem;
+  margin: 0.75rem 0;
   font-size: 0.8125rem;
 }
 
@@ -885,11 +883,6 @@ tr:hover td { background: var(--card-bg); }
 
   .stat-grid {
     grid-template-columns: 1fr;
-  }
-
-  table {
-    width: 100%;
-    margin-left: 0;
   }
 
   .card-grid {
