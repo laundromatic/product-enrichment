@@ -1,0 +1,12 @@
+{
+  "name": "shopgraph",
+  "label": "ShopGraph",
+  "description": "Authenticated product data extraction.",
+  "version": "1.0.0",
+  "categories": ["commerce", "data"],
+  "icon": {
+    "type": "url",
+    "value": "https://shopgraph.dev/icon.png"
+  },
+  "language": "en"
+}

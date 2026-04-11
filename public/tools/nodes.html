@@ -22,7 +22,7 @@
       <div class="card" style="margin:16px 0">
         <h3>n8n-nodes-shopgraph</h3>
         <p>Community node for n8n workflow automation. Extract product data and score agent readiness directly in your workflows.</p>
-        <p style="margin-top:12px"><span class="badge badge-yellow">Coming Soon</span></p>
+        <p style="margin-top:12px"><span class="badge badge-yellow">In Testing</span></p>
       </div>
       <p>In the meantime, use the <strong>HTTP Request</strong> node in n8n to call the <a href="/tools/api">REST API</a> directly:</p>
       <div class="code-header"><span>n8n HTTP Request configuration</span><button class="copy-btn">Copy</button></div>
@@ -37,18 +37,46 @@
   }
 }</code></pre>
 
+      <h3>Make.com HTTP Workaround</h3>
+      <p>Until the native module ships, use the HTTP module in Make.com:</p>
+      <div class="code-header"><span>Make.com HTTP Module</span><button class="copy-btn">Copy</button></div>
+      <pre data-lang="json"><code>{
+  "url": "https://shopgraph.dev/api/enrich/basic",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": {
+    "url": "{{product_url}}"
+  }
+}</code></pre>
+
+      <h3>Power Automate HTTP Workaround</h3>
+      <p>Until the native connector ships, use the HTTP action in Power Automate:</p>
+      <div class="code-header"><span>Power Automate HTTP Action</span><button class="copy-btn">Copy</button></div>
+      <pre data-lang="json"><code>{
+  "method": "POST",
+  "uri": "https://shopgraph.dev/api/enrich/basic",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": {
+    "url": "@{triggerBody()?['product_url']}"
+  }
+}</code></pre>
+
       <h2>Make.com Custom App</h2>
       <div class="card" style="margin:16px 0">
         <h3>ShopGraph for Make</h3>
         <p>Custom app module for Make.com (formerly Integromat). Drag-and-drop product extraction in your scenarios.</p>
-        <p style="margin-top:12px"><span class="badge badge-yellow">Coming Soon</span></p>
+        <p style="margin-top:12px"><span class="badge badge-yellow">In Testing</span></p>
       </div>
 
       <h2>Power Automate Connector</h2>
       <div class="card" style="margin:16px 0">
         <h3>ShopGraph Connector</h3>
         <p>Microsoft Power Automate custom connector for enterprise workflow integration.</p>
-        <p style="margin-top:12px"><span class="badge badge-gray">Planned</span></p>
+        <p style="margin-top:12px"><span class="badge badge-yellow">In Testing</span></p>
       </div>
 
       <div class="alert alert-info">

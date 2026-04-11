@@ -1,0 +1,49 @@
+[
+  {
+    "name": "product",
+    "type": "collection",
+    "label": "Product",
+    "spec": [
+      { "name": "url", "type": "text", "label": "URL" },
+      { "name": "product_name", "type": "text", "label": "Product Name" },
+      { "name": "brand", "type": "text", "label": "Brand" },
+      {
+        "name": "price",
+        "type": "collection",
+        "label": "Price",
+        "spec": [
+          { "name": "amount", "type": "number", "label": "Amount" },
+          { "name": "currency", "type": "text", "label": "Currency" }
+        ]
+      },
+      { "name": "availability", "type": "text", "label": "Availability" },
+      {
+        "name": "categories",
+        "type": "array",
+        "label": "Categories",
+        "spec": { "type": "text" }
+      },
+      {
+        "name": "confidence",
+        "type": "collection",
+        "label": "Confidence",
+        "spec": [
+          { "name": "overall", "type": "number", "label": "Overall Confidence" },
+          { "name": "per_field", "type": "collection", "label": "Per-Field Confidence" }
+        ]
+      },
+      {
+        "name": "_shopgraph",
+        "type": "collection",
+        "label": "ShopGraph Metadata",
+        "spec": [
+          { "name": "extraction_method", "type": "text", "label": "Extraction Method" },
+          { "name": "data_source", "type": "text", "label": "Data Source" },
+          { "name": "field_confidence", "type": "collection", "label": "Field Confidence" }
+        ]
+      }
+    ]
+  },
+  { "name": "cached", "type": "boolean", "label": "Cached" },
+  { "name": "credit_mode", "type": "text", "label": "Credit Mode" }
+]

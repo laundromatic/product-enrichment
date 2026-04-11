@@ -19,7 +19,7 @@
       <p class="subtitle">Versioned methodology for AgentReady scoring. Current version: 2026-04-08-v1.</p>
 
       <div class="alert alert-success">
-        <strong>UCP Schema Compatible</strong> — AgentReady scoring is validated against ucp-schema v1.1.0 field requirements.
+        <strong>UCP Schema Compatible</strong> — AgentReady scoring is validated against ucp-schema v1.1.0 <!-- TODO: link to ucp-schema when published --> field requirements.
       </div>
 
       <h2>Version</h2>
@@ -33,13 +33,14 @@
       </table>
 
       <h2>Composite Score Formula</h2>
-      <p>The overall AgentReady score is a weighted sum of five dimension scores:</p>
+      <p>The overall AgentReady score is a weighted sum of six dimension scores (five currently active):</p>
       <div class="code-header"><span>Formula</span><button class="copy-btn">Copy</button></div>
       <pre><code>overall = (completeness * 0.30)
         + (confidence  * 0.25)
         + (structure    * 0.20)
         + (actionability* 0.15)
         + (freshness    * 0.10)</code></pre>
+      <p>access_readiness is included in the response at weight 0.00. When activated, weights will be redistributed across all six dimensions.</p>
 
       <h2>Dimension Details</h2>
 
@@ -99,6 +100,9 @@
         </tbody>
       </table>
 
+      <h3>6. Access Readiness (weight: 0.00)</h3>
+      <p>Evaluates whether the target URL requires agent-specific authentication or identity handshakes. Currently inactive. All URLs in the test corpus are openly accessible. This dimension activates when Web Bot Auth adoption reaches detection threshold (&gt;10% of test URLs returning Web Bot Auth headers). When active, it will measure whether ShopGraph can successfully complete the required authentication flows.</p>
+
       <h2>Calibration Approach</h2>
       <p>Scores are calibrated against a 208-URL ground-truth dataset:</p>
       <ol style="margin:16px 0;padding-left:24px;line-height:2">
@@ -112,6 +116,9 @@
       <div class="alert alert-info">
         This methodology is versioned. The <code>scoring_version</code> field in every AgentReady score response references a specific revision of this document.
       </div>
+
+      <h2>Version History</h2>
+      <p>2026-04-08-v1 — Initial methodology release. Five active dimensions, access_readiness stubbed at weight 0.00. Calibrated against 208-URL ground-truth dataset across 22 verticals.</p>
 
     </div>
   </div>

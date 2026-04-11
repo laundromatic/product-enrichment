@@ -67,7 +67,7 @@
             <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 6 8 10 12 6"/></svg>
           </button>
           <div class="accordion-content">
-            <p>AgentReady scoring evaluates extracted product data across 5 dimensions (completeness, confidence, structure, actionability, freshness) to produce a single score indicating how suitable the data is for autonomous agent workflows. See <a href="/features/agentready">AgentReady Scoring</a>.</p>
+            <p>AgentReady scoring evaluates extracted product data across 6 dimensions (completeness, confidence, structure, actionability, freshness, access readiness) with 5 currently active to produce a single score indicating how suitable the data is for autonomous agent workflows. See <a href="/features/agentready">AgentReady Scoring</a>.</p>
           </div>
         </div>
       </div>
@@ -91,13 +91,13 @@
             <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 6 8 10 12 6"/></svg>
           </button>
           <div class="accordion-content">
-            <p>ShopGraph works with any product page on the public web. It has been tested across 22 verticals covering both B2C (Shopify, Amazon, Best Buy, etc.) and B2B (Grainger, McMaster-Carr, MSC Industrial, etc.) with a 97% extraction success rate.</p>
+            <p>ShopGraph works with any product page on the public web. It has been tested across 22 verticals covering both B2C (Shopify, Amazon, Best Buy, etc.) and B2B (Grainger, McMaster-Carr, MSC Industrial, etc.) with a 97% extraction success rate across a 208-URL ground-truth dataset.</p>
           </div>
         </div>
 
         <div class="accordion-item">
           <button class="accordion-trigger" onclick="this.parentElement.classList.toggle('open')">
-            Can I use ShopGraph with my existing scraping infrastructure?
+            Can I use ShopGraph with my existing fetching infrastructure?
             <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 6 8 10 12 6"/></svg>
           </button>
           <div class="accordion-content">
@@ -112,6 +112,13 @@
           </button>
           <div class="accordion-content">
             <p>Add the MCP server config to your agent's MCP configuration file. One line: <code>"url": "https://shopgraph.dev/mcp"</code>. Works with Claude, Cursor, CrewAI, LangGraph, AutoGen, and any MCP-compatible client. See <a href="/tools/mcp">MCP Server</a>.</p>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <button class="accordion-trigger">How fast is extraction? <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+          <div class="accordion-content">
+            <p>Latency varies by endpoint, site complexity, and cache state. Cached responses return in under 200ms. Full extraction times depend on whether the site requires JavaScript rendering or authentication handshakes.</p>
           </div>
         </div>
       </div>
@@ -148,6 +155,13 @@
             <p>Each POST to <code>/api/enrich</code>, <code>/api/enrich/basic</code>, or <code>/api/enrich/html</code> counts as one call. Cached responses (within TTL) do not count against your quota. Scoring-only requests (<code>/api/score</code>) are counted separately.</p>
           </div>
         </div>
+
+        <div class="accordion-item">
+          <button class="accordion-trigger">What happens when I hit my rate limit? <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+          <div class="accordion-content">
+            <p>The API returns HTTP 429 with a <code>Retry-After</code> header indicating when you can send the next request. Cached responses (within TTL) do not count against your quota. If you consistently hit limits, upgrade your tier or contact us about Enterprise plans.</p>
+          </div>
+        </div>
       </div>
 
       <!-- Enterprise -->
@@ -159,7 +173,7 @@
             <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 6 8 10 12 6"/></svg>
           </button>
           <div class="accordion-content">
-            <p>Enterprise plans include custom SLAs with guaranteed uptime, latency targets, and dedicated support. Contact <a href="mailto:hi@kb.computer">hi@kb.computer</a> for details.</p>
+            <p>Enterprise plans include custom SLAs with uptime commitments, latency targets, and dedicated support. Contact <a href="mailto:hi@kb.computer">hi@kb.computer</a> for details.</p>
           </div>
         </div>
 

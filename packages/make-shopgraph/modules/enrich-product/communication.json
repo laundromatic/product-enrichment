@@ -1,0 +1,19 @@
+{
+  "url": "{{base.baseUrl}}/api/enrich",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer {{connection.apiKey}}"
+  },
+  "body": {
+    "url": "{{parameters.url}}",
+    "format": "{{parameters.format}}"
+  },
+  "response": {
+    "output": {
+      "product": "{{body.product}}",
+      "cached": "{{body.cached}}",
+      "credit_mode": "{{body.credit_mode}}"
+    }
+  }
+}

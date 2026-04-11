@@ -60,6 +60,7 @@
         <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
         <tbody>
           <tr><td><code>url</code></td><td>string</td><td>Yes</td><td>Product page URL</td></tr>
+          <tr><td><code>format</code></td><td>string</td><td>No</td><td>Response format. <code>json</code> (default) or <code>ucp</code>. When set to <code>ucp</code>, returns data in UCP line_item format.</td></tr>
         </tbody>
       </table>
 
@@ -67,18 +68,24 @@
       <div class="code-header"><span>200 OK</span><button class="copy-btn">Copy</button></div>
       <pre data-lang="json"><code>{
   "product": {
-    "title": "Men's Tree Runners",
-    "price": 98,
-    "currency": "USD",
-    "brand": "Allbirds",
-    "availability": "InStock",
-    "image": "https://cdn.allbirds.com/image/...",
-    "description": "Lightweight, breathable sneakers..."
-  },
-  "_shopgraph": {
-    "extraction_method": "schema_org",
-    "confidence_score": 0.93,
-    "field_confidence": { "title": 0.98, "price": 0.97 }
+    "product_name": "DAYTON 1/2 HP Jet Pump, Model 5UXK1",
+    "brand": "DAYTON",
+    "price": {
+      "amount": 284.00,
+      "currency": "USD"
+    },
+    "availability": "in_stock",
+    "primary_image_url": "https://static.grainger.com/rp/s/is/image/Grainger/5UXK1_AS01",
+    "_shopgraph": {
+      "extraction_method": "schema_org",
+      "field_confidence": {
+        "product_name": 0.98,
+        "brand": 0.93,
+        "price": 0.93,
+        "availability": 0.83,
+        "primary_image_url": 0.93
+      }
+    }
   },
   "cached": false,
   "free_tier": { "used": 12, "limit": 500 }
@@ -107,12 +114,53 @@
         <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
         <tbody>
           <tr><td><code>url</code></td><td>string</td><td>Yes</td><td>Product page URL</td></tr>
-          <tr><td><code>format</code></td><td>string</td><td>No</td><td><code>standard</code> (default) or <code>ucp</code></td></tr>
-          <tr><td><code>strict_confidence_threshold</code></td><td>number</td><td>No</td><td>Filter fields below this confidence (0-1)</td></tr>
+          <tr><td><code>format</code></td><td>string</td><td>No</td><td>Response format. <code>json</code> (default) or <code>ucp</code>. When set to <code>ucp</code>, returns data in UCP line_item format.</td></tr>
+          <tr><td><code>strict_confidence_threshold</code></td><td>number</td><td>No</td><td>Float between 0 and 1. Fields with confidence scores below this threshold are removed from the response. For autonomous pipelines that need only high-confidence data.</td></tr>
           <tr><td><code>include_score</code></td><td>boolean</td><td>No</td><td>Include AgentReady score in response</td></tr>
           <tr><td><code>method</code></td><td>string</td><td>No</td><td>Force extraction method: <code>schema_org</code>, <code>llm</code>, <code>playwright</code></td></tr>
         </tbody>
       </table>
+
+      <h4>Response</h4>
+      <div class="code-header"><span>200 OK — with include_score: true</span><button class="copy-btn">Copy</button></div>
+      <pre data-lang="json"><code>{
+  "product": {
+    "product_name": "DAYTON 1/2 HP Jet Pump, Model 5UXK1",
+    "brand": "DAYTON",
+    "price": {
+      "amount": 284.00,
+      "currency": "USD"
+    },
+    "availability": "in_stock",
+    "primary_image_url": "https://static.grainger.com/rp/s/is/image/Grainger/5UXK1_AS01",
+    "categories": ["Jet Pumps", "Pumps", "Plumbing"],
+    "_shopgraph": {
+      "extraction_method": "schema_org",
+      "data_source": "live",
+      "field_confidence": {
+        "product_name": 0.98,
+        "brand": 0.93,
+        "price": 0.93,
+        "availability": 0.83,
+        "categories": 0.93,
+        "primary_image_url": 0.93
+      },
+      "confidence_method": "tier_baseline"
+    }
+  },
+  "agent_readiness_score": 74.2,
+  "scoring_breakdown": {
+    "structured_data_completeness": { "score": 82, "weight": 0.30, "weighted_contribution": 24.6 },
+    "semantic_richness":            { "score": 68, "weight": 0.20, "weighted_contribution": 13.6 },
+    "ucp_compatibility":            { "score": 71, "weight": 0.10, "weighted_contribution": 7.1 },
+    "pricing_clarity":              { "score": 80, "weight": 0.13, "weighted_contribution": 10.4 },
+    "inventory_signal_quality":     { "score": 75, "weight": 0.12, "weighted_contribution": 9.0 },
+    "access_readiness":             { "score": 63, "weight": 0.15, "weighted_contribution": 9.5 }
+  },
+  "scoring_version": "0.3.0",
+  "cached": false,
+  "credit_mode": "standard"
+}</code></pre>
 
       <hr>
 

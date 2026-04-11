@@ -1,6 +1,6 @@
 # n8n-nodes-shopgraph
 
-[n8n](https://n8n.io/) community node for [ShopGraph](https://shopgraph.dev) — an API that extracts structured product data from any e-commerce URL with confidence scores. Feed it a product page and get back clean, structured fields (title, price, images, specs, and more) ready for your automation workflows.
+[n8n](https://n8n.io/) community node for [ShopGraph](https://shopgraph.dev) -- authenticated product data extraction. Feed it a product page URL (or raw HTML) and get back structured fields (name, brand, price, images, availability, categories) with per-field confidence scores, ready for your automation workflows.
 
 ## Installation
 
@@ -20,22 +20,44 @@ npm install n8n-nodes-shopgraph
 
 1. In n8n, go to **Credentials > New Credential > ShopGraph API**.
 2. Enter your API key (starts with `sg_live_...`). Get one at [shopgraph.dev/dashboard](https://shopgraph.dev/dashboard).
-3. The **Enrich Basic** operation works without an API key (free tier, 500 calls/month). All other operations require an API key.
+3. Optionally change the **Base URL** if you are running a self-hosted instance.
 
 ## Operations
 
-| Operation | Description | API Key Required |
-|-----------|-------------|-----------------|
-| **Enrich Product** | Extract full structured product data from a URL | Yes |
-| **Enrich Basic** | Extract basic product data (free tier) | No |
-| **Enrich HTML** | Extract product data from raw HTML content | Yes |
-| **Score Product** | Get product data quality scores for a URL | Yes |
+| Operation | Description |
+|-----------|-------------|
+| **Enrich** | Extract structured product data from a URL |
+| **Enrich HTML** | Extract structured product data from raw HTML content |
 
-### Shared Options
+### Parameters
 
-- **Strict Confidence Threshold** (0-1) — minimum confidence for fields to be included
-- **Format** — response format (`default` or `ucp`)
-- **Include Score** — include per-field confidence scores in the response
+- **URL** (Enrich) -- The product page URL to extract data from.
+- **HTML** (Enrich HTML) -- Raw HTML content of a product page.
+- **Format** -- Response format: `ShopGraph` (default) or `UCP`.
+
+### Example Output
+
+```json
+{
+  "product": {
+    "url": "https://www.example.com/product/widget",
+    "product_name": "ACME Widget Pro",
+    "brand": "ACME",
+    "price": { "amount": 49.99, "currency": "USD" },
+    "availability": "in_stock",
+    "categories": ["Widgets", "Tools"],
+    "image_urls": ["https://..."],
+    "confidence": { "overall": 0.93 },
+    "_shopgraph": {
+      "extraction_method": "schema_org",
+      "data_source": "live",
+      "field_confidence": {}
+    }
+  },
+  "cached": false,
+  "credit_mode": "standard"
+}
+```
 
 ## Links
 

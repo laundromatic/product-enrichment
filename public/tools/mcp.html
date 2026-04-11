@@ -31,6 +31,7 @@
     }
   }
 }</code></pre>
+      <p>The remote MCP server works without an API key on the free tier (500 calls/month). For higher limits, add your API key as an environment variable and the server will include it automatically. See <a href="/pricing">Pricing</a> for tier details.</p>
 
       <h3>Local Server (self-hosted)</h3>
       <p>Run ShopGraph as a local MCP server via npx:</p>
@@ -75,7 +76,7 @@
         <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
         <tbody>
           <tr><td><code>url</code></td><td>string</td><td>Yes</td><td>Product page URL</td></tr>
-          <tr><td><code>format</code></td><td>string</td><td>No</td><td><code>standard</code> or <code>ucp</code></td></tr>
+          <tr><td><code>format</code></td><td>string</td><td>No</td><td><code>default</code> or <code>ucp</code></td></tr>
           <tr><td><code>strict_confidence_threshold</code></td><td>number</td><td>No</td><td>Filter fields below threshold (0-1)</td></tr>
           <tr><td><code>include_score</code></td><td>boolean</td><td>No</td><td>Include AgentReady score</td></tr>
         </tbody>
@@ -96,19 +97,24 @@
         <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
         <tbody>
           <tr><td><code>html</code></td><td>string</td><td>Yes</td><td>Raw HTML of the product page</td></tr>
-          <tr><td><code>url</code></td><td>string</td><td>No</td><td>Source URL for context</td></tr>
-          <tr><td><code>format</code></td><td>string</td><td>No</td><td><code>standard</code> or <code>ucp</code></td></tr>
+          <tr><td><code>url</code></td><td>string</td><td>Yes</td><td>Source URL for context and caching</td></tr>
+          <tr><td><code>format</code></td><td>string</td><td>No</td><td><code>default</code> or <code>ucp</code></td></tr>
         </tbody>
       </table>
 
       <h3><code>score_product</code></h3>
-      <p>Score existing product data for agent readiness.</p>
+      <p>Extract product data from a URL and return an agent-readiness score (0-100).</p>
       <table>
         <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
         <tbody>
-          <tr><td><code>product</code></td><td>object</td><td>Yes</td><td>ProductData object to score</td></tr>
+          <tr><td><code>url</code></td><td>string</td><td>Yes</td><td>Product page URL to extract and score</td></tr>
+          <tr><td><code>format</code></td><td>string</td><td>No</td><td><code>default</code> or <code>ucp</code></td></tr>
+          <tr><td><code>strict_confidence_threshold</code></td><td>number</td><td>No</td><td>Filter fields below threshold (0-1)</td></tr>
         </tbody>
       </table>
+
+      <h2>Error Handling</h2>
+      <p>MCP tool calls return errors as structured JSON objects with <code>isError: true</code>. Common error types: <code>extraction_failed</code> (page could not be parsed), <code>payment_required</code> (free tier exhausted, payment method needed), <code>payment_failed</code> (charge declined), <code>ucp_mapping_failed</code> (product data could not map to UCP format). Your agent can inspect the <code>error</code> field and retry or surface the <code>message</code> to the user.</p>
 
       <h2>Payment</h2>
       <p>MCP calls on the free tier (500/month) require no authentication. For paid tiers, authenticate via:</p>

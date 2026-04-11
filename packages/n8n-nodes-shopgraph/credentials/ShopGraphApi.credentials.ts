@@ -18,7 +18,16 @@ export class ShopGraphApi implements ICredentialType {
 			default: '',
 			placeholder: 'sg_live_...',
 			description:
-				'ShopGraph API key. Get one at shopgraph.dev/dashboard. Leave empty to use the free tier (500 calls/month).',
+				'Your ShopGraph API key. Get one at shopgraph.dev/dashboard.',
+		},
+		{
+			displayName: 'Base URL',
+			name: 'baseUrl',
+			type: 'string',
+			default: 'https://shopgraph.dev',
+			placeholder: 'https://shopgraph.dev',
+			description:
+				'Base URL for the ShopGraph API. Only change this if using a self-hosted instance.',
 		},
 	];
 

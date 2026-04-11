@@ -11,7 +11,16 @@
     "commerce"
   ],
   "license": "MIT",
+  "homepage": "https://shopgraph.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shopgraph/n8n-nodes-shopgraph"
+  },
   "main": "dist/index.js",
+  "files": [
+    "dist/**/*",
+    "nodes/**/*.svg"
+  ],
   "n8n": {
     "n8nNodesApiVersion": 1,
     "credentials": [
@@ -22,7 +31,8 @@
     ]
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && npm run copy-assets",
+    "copy-assets": "cp nodes/ShopGraph/ShopGraph.node.json dist/nodes/ShopGraph/ && cp nodes/ShopGraph/shopgraph.svg dist/nodes/ShopGraph/",
     "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
