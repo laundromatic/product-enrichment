@@ -106,6 +106,10 @@
       <p>Note: If you apply a <code>strict_confidence_threshold</code> to a request, fields falling below that threshold are omitted from the <code>line_item</code>, and the <code>_extraction_status</code> will downgrade to <code>partial</code>. For agent routing workflows, we recommend omitting the threshold and evaluating the <code>field_confidence</code> block directly.</p>
 
       <div class="alert alert-info">
+        <strong>What this unlocks:</strong> One integration for every merchant. Your pipeline consumes UCP line_items regardless of whether the source is Shopify, Grainger, or McMaster-Carr. No per-supplier mappers. No custom parsers.
+      </div>
+
+      <div class="alert alert-info">
         See the full <a href="/output/ucp-line-item">UCP Line Item schema reference</a> for all fields and types.
       </div>
 

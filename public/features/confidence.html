@@ -130,6 +130,10 @@
       <p>When using <code>format: ucp</code>, confidence data appears under <code>_extensions.shopgraph.field_confidence</code>. See <a href="/features/ucp">UCP Output</a> for the full mapping.</p>
 
       <div class="alert alert-info">
+        <strong>What this unlocks:</strong> Per-field routing in agent workflows. Autonomous action on high-confidence fields, human review on uncertain ones, rejection of unreliable data. Your agent makes field-level decisions instead of all-or-nothing accept/reject.
+      </div>
+
+      <div class="alert alert-info">
         <strong>Tip:</strong> Start with a threshold of 0.7 and increase as needed. Most Schema.org extractions return fields above 0.9.
       </div>
 
