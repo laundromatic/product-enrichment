@@ -35,73 +35,68 @@
       <h2>Composite Score Formula</h2>
       <p>The overall AgentReady score is a weighted sum of six dimension scores (five currently active):</p>
       <div class="code-header"><span>Formula</span><button class="copy-btn">Copy</button></div>
-      <pre><code>overall = (completeness * 0.30)
-        + (confidence  * 0.25)
-        + (structure    * 0.20)
-        + (actionability* 0.15)
-        + (freshness    * 0.10)</code></pre>
+      <pre><code>agent_readiness_score = (structured_data_completeness * 0.30)
+                     + (semantic_richness             * 0.20)
+                     + (ucp_compatibility             * 0.20)
+                     + (pricing_clarity               * 0.15)
+                     + (inventory_signal_quality       * 0.15)</code></pre>
       <p>access_readiness is included in the response at weight 0.00. When activated, weights will be redistributed across all six dimensions.</p>
 
       <h2>Dimension Details</h2>
 
-      <h3>1. Completeness (weight: 0.30)</h3>
-      <p>Measures how many expected fields are present in the extracted data.</p>
-      <h4>Core fields (weighted 2x)</h4>
+      <h3>1. Structured Data Completeness (weight: 0.30)</h3>
+      <p>Measures how many expected fields are present in the extracted data. Scores on a 0-100 scale.</p>
+      <h4>Core fields</h4>
       <ul style="margin:8px 0 16px;padding-left:24px;line-height:1.8">
         <li><code>title</code> — Product name</li>
         <li><code>price</code> — Numeric price</li>
-        <li><code>currency</code> — ISO 4217 code</li>
-        <li><code>brand</code> — Brand or manufacturer</li>
-        <li><code>image</code> — Primary product image</li>
+        <li><code>description</code> — Product description</li>
         <li><code>availability</code> — Stock status</li>
-        <li><code>url</code> — Canonical product URL</li>
+        <li><code>images</code> — Primary product image</li>
+        <li><code>brand</code> — Brand or manufacturer</li>
+        <li><code>categories</code> — Product categories</li>
+        <li><code>specs</code> — Product dimensions/specifications</li>
       </ul>
-      <h4>Optional fields (weighted 1x)</h4>
+      <p>Base score = (fields_present / fields_expected) * 100. B2B bonus (up to 10 points) for part numbers, MOQ, lead time, and bulk pricing signals.</p>
+
+      <h3>2. Semantic Richness (weight: 0.20)</h3>
+      <p>Evaluates category depth, attribute count, variant coverage, and description quality. Scores on a 0-100 scale.</p>
       <ul style="margin:8px 0 16px;padding-left:24px;line-height:1.8">
-        <li><code>description</code>, <code>sku</code>, <code>gtin</code>, <code>mpn</code>, <code>category</code>, <code>rating</code>, <code>review_count</code>, <code>variants</code></li>
+        <li><strong>Category depth</strong> (max 25 pts) — Deeper category trees score higher</li>
+        <li><strong>Attribute count</strong> (max 25 pts) — Colors, materials, dimensions</li>
+        <li><strong>Variant coverage</strong> (max 25 pts) — Multiple color/material options</li>
+        <li><strong>Description quality</strong> (max 25 pts) — Length and detail of description</li>
       </ul>
-      <p>Score = (core_present * 2 + optional_present) / (core_expected * 2 + optional_total)</p>
 
-      <h3>2. Confidence (weight: 0.25)</h3>
-      <p>Based on per-field confidence scores from the extraction pipeline.</p>
-      <p>Score = mean(field_confidences). Penalized if any field falls below 0.5 (floor penalty of -0.1).</p>
-
-      <h3>3. Structure (weight: 0.20)</h3>
-      <p>Validates that extracted data conforms to expected formats:</p>
+      <h3>3. UCP Compatibility (weight: 0.20)</h3>
+      <p>How well the extracted data maps to the Universal Commerce Protocol schema. Scores on a 0-100 scale.</p>
       <ul style="margin:8px 0 16px;padding-left:24px;line-height:1.8">
-        <li>Price is a valid positive number</li>
-        <li>Currency is a valid ISO 4217 code</li>
-        <li>URL is well-formed (starts with http/https)</li>
-        <li>Availability matches Schema.org ItemAvailability enum</li>
-        <li>Image URLs are valid and accessible</li>
+        <li><strong>Required UCP fields</strong> (60%) — item.id, item.title, item.price</li>
+        <li><strong>Optional UCP fields</strong> (25%) — image, brand, description, availability, categories, currency, color, material</li>
+        <li><strong>UCP mapping validation</strong> (15%) — Actual mapping to UCP schema succeeds</li>
       </ul>
-      <p>Score = valid_checks / total_checks</p>
 
-      <h3>4. Actionability (weight: 0.15)</h3>
-      <p>Can an AI agent take action (e.g. purchase, compare, recommend) with this data?</p>
+      <h3>4. Pricing Clarity (weight: 0.15)</h3>
+      <p>Evaluates price data completeness and B2B pricing signals. Scores on a 0-100 scale.</p>
       <ul style="margin:8px 0 16px;padding-left:24px;line-height:1.8">
-        <li><strong>has_price</strong> (0.35) — Price is present and valid</li>
-        <li><strong>has_availability</strong> (0.30) — Stock status is known</li>
-        <li><strong>has_product_url</strong> (0.20) — Product URL for linking/visiting</li>
-        <li><strong>has_add_to_cart</strong> (0.15) — Add-to-cart mechanism detected</li>
+        <li><strong>Base price present</strong> (40 pts)</li>
+        <li><strong>Currency present</strong> (20 pts)</li>
+        <li><strong>Sale price info</strong> (15 pts)</li>
+        <li><strong>Bulk/tier pricing detected</strong> (15 pts)</li>
+        <li><strong>MOQ detected</strong> (10 pts)</li>
       </ul>
-      <p>Score = weighted sum of boolean checks</p>
 
-      <h3>5. Freshness (weight: 0.10)</h3>
-      <p>Penalizes stale or cached data:</p>
-      <table>
-        <thead><tr><th>Data Age</th><th>Score</th></tr></thead>
-        <tbody>
-          <tr><td>&lt; 1 hour</td><td>1.0</td></tr>
-          <tr><td>1-6 hours</td><td>0.9</td></tr>
-          <tr><td>6-24 hours</td><td>0.7</td></tr>
-          <tr><td>1-7 days</td><td>0.4</td></tr>
-          <tr><td>&gt; 7 days</td><td>0.1</td></tr>
-        </tbody>
-      </table>
+      <h3>5. Inventory Signal Quality (weight: 0.15)</h3>
+      <p>Measures specificity of stock and fulfillment data. Scores on a 0-100 scale.</p>
+      <ul style="margin:8px 0 16px;padding-left:24px;line-height:1.8">
+        <li><strong>Stock status present</strong> (40 pts)</li>
+        <li><strong>Quantity information</strong> (25 pts)</li>
+        <li><strong>Lead time detected</strong> (20 pts)</li>
+        <li><strong>Backorder info</strong> (15 pts)</li>
+      </ul>
 
       <h3>6. Access Readiness (weight: 0.00)</h3>
-      <p>Evaluates whether the target URL requires agent-specific authentication or identity handshakes. Currently inactive. All URLs in the test corpus are openly accessible. This dimension activates when Web Bot Auth adoption reaches detection threshold (&gt;10% of test URLs returning Web Bot Auth headers). When active, it will measure whether ShopGraph can successfully complete the required authentication flows.</p>
+      <p>Evaluates whether the target URL requires agent-specific authentication or identity handshakes. Scores on a 0-100 scale. Currently inactive (weight 0.00). All URLs in the test corpus are openly accessible. This dimension activates when Web Bot Auth adoption reaches detection threshold (&gt;10% of test URLs returning Web Bot Auth headers). When active, weights will be redistributed across all six dimensions.</p>
 
       <h2>Calibration Approach</h2>
       <p>Scores are calibrated against a 208-URL ground-truth dataset:</p>

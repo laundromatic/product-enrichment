@@ -19,7 +19,7 @@
       <p class="subtitle">A composite score that tells agents how ready product data is for automated decision-making.</p>
 
       <h2>What is AgentReady Scoring?</h2>
-      <p>AgentReady scoring evaluates extracted product data across six dimensions to produce a single score (0-1) indicating how suitable the data is for autonomous agent workflows like purchasing, comparison, or inventory management.</p>
+      <p>AgentReady scoring evaluates extracted product data across six dimensions to produce a single score (0-100) indicating how suitable the data is for autonomous agent workflows like purchasing, comparison, or inventory management.</p>
 
       <h2>Six Dimensions</h2>
       <table>
@@ -28,13 +28,15 @@
         </thead>
         <tbody>
           <tr><td><strong>Completeness</strong></td><td>0.30</td><td>Percentage of expected fields present. Core fields (title, price, currency) weighted more heavily.</td></tr>
-          <tr><td><strong>Confidence</strong></td><td>0.20</td><td>Average per-field confidence score from the extraction pipeline.</td></tr>
-          <tr><td><strong>Structure</strong></td><td>0.20</td><td>Data format quality: correct types, valid URLs, proper currency codes, parseable prices.</td></tr>
-          <tr><td><strong>Actionability</strong></td><td>0.15</td><td>Can an agent act on this data? Requires price + availability + product URL at minimum.</td></tr>
-          <tr><td><strong>Freshness</strong></td><td>0.15</td><td>How recent is the extraction? Cached data older than 24h gets a penalty.</td></tr>
+          <tr><td><strong>Semantic Richness</strong></td><td>0.20</td><td>Category depth, attribute count, variant coverage, and description quality.</td></tr>
+          <tr><td><strong>UCP Compatibility</strong></td><td>0.20</td><td>How well the extracted data maps to the Universal Commerce Protocol schema.</td></tr>
+          <tr><td><strong>Pricing Clarity</strong></td><td>0.15</td><td>Base price, currency, sale price, and B2B signals like bulk pricing and MOQ.</td></tr>
+          <tr><td><strong>Inventory Signals</strong></td><td>0.15</td><td>Stock status specificity, quantity information, lead time, and backorder signals.</td></tr>
           <tr><td><strong>Access Readiness</strong></td><td>0.00</td><td>Agent accessibility score. Activates when Web Bot Auth adoption reaches detection threshold. Currently all test corpus URLs are fully open.</td></tr>
         </tbody>
       </table>
+
+      <p>In API responses, these dimensions appear under their full names: <code>structured_data_completeness</code>, <code>semantic_richness</code>, <code>ucp_compatibility</code>, <code>pricing_clarity</code>, <code>inventory_signal_quality</code>, <code>access_readiness</code>.</p>
 
       <h2>Usage</h2>
       <h3>Inline with extraction</h3>
@@ -62,67 +64,84 @@
       <h2>Response Example</h2>
       <div class="code-header"><span>AgentReady Score response</span><button class="copy-btn">Copy</button></div>
       <pre data-lang="json"><code>{
-  "agent_ready_score": {
-    "overall": 0.87,
-    "dimensions": {
-      "completeness": {
-        "score": 0.92,
-        "weight": 0.30,
-        "details": {
-          "core_fields_present": 6,
-          "core_fields_expected": 7,
-          "optional_fields_present": 3
-        }
-      },
-      "confidence": {
-        "score": 0.88,
-        "weight": 0.20,
-        "details": {
-          "mean_confidence": 0.88,
-          "min_confidence": 0.72,
-          "fields_above_0.8": 5
-        }
-      },
-      "structure": {
-        "score": 0.85,
-        "weight": 0.20,
-        "details": {
-          "valid_price_format": true,
-          "valid_currency_code": true,
-          "valid_url": true,
-          "valid_availability_enum": true
-        }
-      },
-      "actionability": {
-        "score": 0.80,
-        "weight": 0.15,
-        "details": {
-          "has_price": true,
-          "has_availability": true,
-          "has_product_url": true,
-          "has_add_to_cart": false
-        }
-      },
-      "freshness": {
-        "score": 0.95,
-        "weight": 0.15,
-        "details": {
-          "extraction_age_hours": 0.5,
-          "cached": false
-        }
-      },
-      "access_readiness": {
-        "score": 1.0,
-        "weight": 0.00,
-        "details": {
-          "access_label": "fully_open",
-          "note": "Web Bot Auth probing activates when adoption reaches detection threshold"
-        }
+  "agent_readiness_score": 87,
+  "scoring_breakdown": {
+    "structured_data_completeness": {
+      "score": 92,
+      "weight": 0.30,
+      "weighted_contribution": 27.6,
+      "details": {
+        "title": "present",
+        "price": "present",
+        "description": "present",
+        "availability": "present",
+        "images": "present",
+        "brand": "present",
+        "categories": "missing",
+        "specs": "present"
       }
     },
-    "scoring_version": "2026-04-08-v1",
-    "methodology_url": "https://shopgraph.dev/methodology"
-  }
+    "semantic_richness": {
+      "score": 68,
+      "weight": 0.20,
+      "weighted_contribution": 13.6,
+      "details": {
+        "category_count": 3,
+        "attribute_count": 4,
+        "variant_signals": 1,
+        "description_length": 220
+      }
+    },
+    "ucp_compatibility": {
+      "score": 85,
+      "weight": 0.20,
+      "weighted_contribution": 17.0,
+      "details": {
+        "required_present": 3,
+        "required_total": 3,
+        "optional_present": 5,
+        "optional_total": 8,
+        "ucp_mapping_valid": true
+      }
+    },
+    "pricing_clarity": {
+      "score": 80,
+      "weight": 0.15,
+      "weighted_contribution": 12.0,
+      "details": {
+        "base_price": true,
+        "currency": true,
+        "sale_price": false,
+        "bulk_pricing_detected": true,
+        "moq_detected": false
+      }
+    },
+    "inventory_signal_quality": {
+      "score": 75,
+      "weight": 0.15,
+      "weighted_contribution": 11.25,
+      "details": {
+        "stock_status": true,
+        "stock_status_value": "in_stock",
+        "quantity_available": false,
+        "lead_time_detected": true,
+        "backorder_detected": false
+      }
+    },
+    "access_readiness": {
+      "score": 100,
+      "weight": 0.00,
+      "weighted_contribution": 0,
+      "details": {
+        "access_level": 5,
+        "access_label": "fully_open",
+        "feature_flag_active": false,
+        "note": "Access readiness scoring activates when Web Bot Auth adoption reaches detection threshold."
+      }
+    }
+  },
+  "scoring_version": "2026-04-08-v1",
+  "methodology_url": "https://shopgraph.dev/methodology"
 }</code></pre>
 
       <h2>B2B Awareness</h2>

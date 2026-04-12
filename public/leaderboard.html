@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Which commerce sites are ready for AI agents? Live AgentReady scores across 25+ retailers, updated daily. See how Grainger, Amazon, Target, and more perform across 5 dimensions of agent readiness.">
-<title>Access Readiness Leaderboard — ShopGraph</title>
+<meta name="description" content="How ready are major commerce sites for authenticated AI agents? Live AgentReady scores across 25+ retailers, updated daily. See how Grainger, Amazon, Target, and more perform across 5 dimensions of agent readiness.">
+<title>AgentReady Leaderboard — ShopGraph</title>
 <link rel="icon" type="image/png" href="/icon.png">
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -211,8 +211,8 @@
   <div class="content">
     <div class="content-inner">
 
-      <h1>Access Readiness Leaderboard</h1>
-      <p class="subtitle">How accessible are major commerce sites to authenticated AI agents?</p>
+      <h1>AgentReady Leaderboard</h1>
+      <p class="subtitle">How ready are major commerce sites for authenticated AI agents?</p>
       <p class="last-updated" id="last-updated"></p>
 
       <div id="leaderboard-loading" class="leaderboard-loading">
@@ -227,10 +227,10 @@
                 <th data-key="domain">Domain <span class="sort-arrow">&#9650;</span></th>
                 <th data-key="score" class="sort-active">Score <span class="sort-arrow">&#9660;</span></th>
                 <th data-key="completeness">Completeness <span class="sort-arrow">&#9650;</span></th>
-                <th data-key="confidence">Confidence <span class="sort-arrow">&#9650;</span></th>
-                <th data-key="structure">Structure <span class="sort-arrow">&#9650;</span></th>
-                <th data-key="actionability">Actionability <span class="sort-arrow">&#9650;</span></th>
-                <th data-key="freshness">Freshness <span class="sort-arrow">&#9650;</span></th>
+                <th data-key="semantic">Semantic <span class="sort-arrow">&#9650;</span></th>
+                <th data-key="ucp">UCP <span class="sort-arrow">&#9650;</span></th>
+                <th data-key="pricing">Pricing <span class="sort-arrow">&#9650;</span></th>
+                <th data-key="inventory">Inventory <span class="sort-arrow">&#9650;</span></th>
                 <th data-key="scored_at">Last Checked <span class="sort-arrow">&#9650;</span></th>
               </tr>
             </thead>
@@ -252,34 +252,48 @@
 <script>
 (function () {
   var SEED_DATA = [
-    { domain: "grainger.com", url: "https://www.grainger.com/product/DAYTON-1-2-HP-Jet-Pump-5UXK1", score: 87, completeness: 92, confidence: 88, structure: 85, actionability: 80, freshness: 95, scored_at: "2026-04-11T06:00:00Z" },
-    { domain: "amazon.com", url: "https://www.amazon.com/dp/B0BSHF7WHN", score: 82, completeness: 88, confidence: 83, structure: 80, actionability: 85, freshness: 90, scored_at: "2026-04-11T06:00:00Z" },
-    { domain: "homedepot.com", url: "https://www.homedepot.com/p/Milwaukee-M18-FUEL-18V/309476381", score: 85, completeness: 90, confidence: 86, structure: 82, actionability: 83, freshness: 92, scored_at: "2026-04-11T06:00:00Z" },
-    { domain: "target.com", url: "https://www.target.com/p/stanley-quencher/-/A-87408364", score: 79, completeness: 84, confidence: 80, structure: 75, actionability: 78, freshness: 88, scored_at: "2026-04-11T06:00:00Z" },
-    { domain: "walmart.com", url: "https://www.walmart.com/ip/Product/123456789", score: 76, completeness: 82, confidence: 78, structure: 72, actionability: 75, freshness: 85, scored_at: "2026-04-11T06:00:00Z" },
-    { domain: "bestbuy.com", url: "https://www.bestbuy.com/site/product/6505727", score: 81, completeness: 86, confidence: 82, structure: 78, actionability: 80, freshness: 89, scored_at: "2026-04-11T06:00:00Z" },
-    { domain: "nike.com", url: "https://www.nike.com/t/air-max-90-shoe", score: 73, completeness: 78, confidence: 75, structure: 70, actionability: 72, freshness: 82, scored_at: "2026-04-11T06:00:00Z" },
-    { domain: "allbirds.com", url: "https://www.allbirds.com/products/mens-tree-runners", score: 84, completeness: 89, confidence: 85, structure: 82, actionability: 81, freshness: 91, scored_at: "2026-04-11T06:00:00Z" },
-    { domain: "wayfair.com", url: "https://www.wayfair.com/furniture/pdp/product-W123456.html", score: 71, completeness: 76, confidence: 72, structure: 68, actionability: 70, freshness: 80, scored_at: "2026-04-11T06:00:00Z" },
-    { domain: "nordstrom.com", url: "https://www.nordstrom.com/s/product/6789012", score: 77, completeness: 83, confidence: 79, structure: 74, actionability: 76, freshness: 86, scored_at: "2026-04-11T06:00:00Z" },
-    { domain: "zappos.com", url: "https://www.zappos.com/p/product/123456", score: 75, completeness: 80, confidence: 76, structure: 72, actionability: 74, freshness: 84, scored_at: "2026-04-11T06:00:00Z" },
-    { domain: "etsy.com", url: "https://www.etsy.com/listing/1234567890", score: 68, completeness: 73, confidence: 69, structure: 65, actionability: 67, freshness: 78, scored_at: "2026-04-11T06:00:00Z" },
-    { domain: "uline.com", url: "https://www.uline.com/Product/Detail/S-12345", score: 83, completeness: 88, confidence: 84, structure: 80, actionability: 82, freshness: 90, scored_at: "2026-04-11T06:00:00Z" },
-    { domain: "fastenal.com", url: "https://www.fastenal.com/product/12345", score: 80, completeness: 85, confidence: 81, structure: 77, actionability: 79, freshness: 88, scored_at: "2026-04-11T06:00:00Z" },
-    { domain: "mcmaster.com", url: "https://www.mcmaster.com/catalog/12345", score: 45, completeness: 50, confidence: 48, structure: 42, actionability: 40, freshness: 55, scored_at: "2026-04-11T06:00:00Z" },
-    { domain: "zoro.com", url: "https://www.zoro.com/product/G12345", score: 86, completeness: 91, confidence: 87, structure: 83, actionability: 84, freshness: 93, scored_at: "2026-04-11T06:00:00Z" },
-    { domain: "globalindustrial.com", url: "https://www.globalindustrial.com/p/product/123456", score: 78, completeness: 83, confidence: 79, structure: 75, actionability: 77, freshness: 86, scored_at: "2026-04-11T06:00:00Z" },
-    { domain: "rs-online.com", url: "https://us.rs-online.com/product/123456", score: 74, completeness: 79, confidence: 75, structure: 71, actionability: 73, freshness: 83, scored_at: "2026-04-11T06:00:00Z" },
-    { domain: "digikey.com", url: "https://www.digikey.com/en/products/detail/part/123456", score: 88, completeness: 93, confidence: 89, structure: 86, actionability: 85, freshness: 94, scored_at: "2026-04-11T06:00:00Z" },
-    { domain: "mouser.com", url: "https://www.mouser.com/ProductDetail/123456", score: 86, completeness: 91, confidence: 87, structure: 83, actionability: 84, freshness: 92, scored_at: "2026-04-11T06:00:00Z" },
-    { domain: "newark.com", url: "https://www.newark.com/product/123456", score: 82, completeness: 87, confidence: 83, structure: 79, actionability: 81, freshness: 89, scored_at: "2026-04-11T06:00:00Z" },
-    { domain: "mscdirect.com", url: "https://www.mscdirect.com/product/12345678", score: 81, completeness: 86, confidence: 82, structure: 78, actionability: 80, freshness: 88, scored_at: "2026-04-11T06:00:00Z" },
-    { domain: "ikea.com", url: "https://www.ikea.com/us/en/p/product-12345678", score: 72, completeness: 77, confidence: 73, structure: 69, actionability: 71, freshness: 81, scored_at: "2026-04-11T06:00:00Z" },
-    { domain: "asos.com", url: "https://www.asos.com/product/123456", score: 70, completeness: 75, confidence: 71, structure: 67, actionability: 69, freshness: 79, scored_at: "2026-04-11T06:00:00Z" },
-    { domain: "webstaurantstore.com", url: "https://www.webstaurantstore.com/product/123456.html", score: 85, completeness: 90, confidence: 86, structure: 82, actionability: 83, freshness: 91, scored_at: "2026-04-11T06:00:00Z" }
+    { domain: "grainger.com", url: "https://www.grainger.com/product/DAYTON-1-2-HP-Jet-Pump-5UXK1", score: 87, completeness: 92, semantic: 88, ucp: 85, pricing: 80, inventory: 95, scored_at: "2026-04-11T06:00:00Z" },
+    { domain: "amazon.com", url: "https://www.amazon.com/dp/B0BSHF7WHN", score: 82, completeness: 88, semantic: 83, ucp: 80, pricing: 85, inventory: 90, scored_at: "2026-04-11T06:00:00Z" },
+    { domain: "homedepot.com", url: "https://www.homedepot.com/p/Milwaukee-M18-FUEL-18V/309476381", score: 85, completeness: 90, semantic: 86, ucp: 82, pricing: 83, inventory: 92, scored_at: "2026-04-11T06:00:00Z" },
+    { domain: "target.com", url: "https://www.target.com/p/stanley-quencher/-/A-87408364", score: 79, completeness: 84, semantic: 80, ucp: 75, pricing: 78, inventory: 88, scored_at: "2026-04-11T06:00:00Z" },
+    { domain: "walmart.com", url: "https://www.walmart.com/ip/Product/123456789", score: 76, completeness: 82, semantic: 78, ucp: 72, pricing: 75, inventory: 85, scored_at: "2026-04-11T06:00:00Z" },
+    { domain: "bestbuy.com", url: "https://www.bestbuy.com/site/product/6505727", score: 81, completeness: 86, semantic: 82, ucp: 78, pricing: 80, inventory: 89, scored_at: "2026-04-11T06:00:00Z" },
+    { domain: "nike.com", url: "https://www.nike.com/t/air-max-90-shoe", score: 73, completeness: 78, semantic: 75, ucp: 70, pricing: 72, inventory: 82, scored_at: "2026-04-11T06:00:00Z" },
+    { domain: "allbirds.com", url: "https://www.allbirds.com/products/mens-tree-runners", score: 84, completeness: 89, semantic: 85, ucp: 82, pricing: 81, inventory: 91, scored_at: "2026-04-11T06:00:00Z" },
+    { domain: "wayfair.com", url: "https://www.wayfair.com/furniture/pdp/product-W123456.html", score: 71, completeness: 76, semantic: 72, ucp: 68, pricing: 70, inventory: 80, scored_at: "2026-04-11T06:00:00Z" },
+    { domain: "nordstrom.com", url: "https://www.nordstrom.com/s/product/6789012", score: 77, completeness: 83, semantic: 79, ucp: 74, pricing: 76, inventory: 86, scored_at: "2026-04-11T06:00:00Z" },
+    { domain: "zappos.com", url: "https://www.zappos.com/p/product/123456", score: 75, completeness: 80, semantic: 76, ucp: 72, pricing: 74, inventory: 84, scored_at: "2026-04-11T06:00:00Z" },
+    { domain: "etsy.com", url: "https://www.etsy.com/listing/1234567890", score: 68, completeness: 73, semantic: 69, ucp: 65, pricing: 67, inventory: 78, scored_at: "2026-04-11T06:00:00Z" },
+    { domain: "uline.com", url: "https://www.uline.com/Product/Detail/S-12345", score: 83, completeness: 88, semantic: 84, ucp: 80, pricing: 82, inventory: 90, scored_at: "2026-04-11T06:00:00Z" },
+    { domain: "fastenal.com", url: "https://www.fastenal.com/product/12345", score: 80, completeness: 85, semantic: 81, ucp: 77, pricing: 79, inventory: 88, scored_at: "2026-04-11T06:00:00Z" },
+    { domain: "mcmaster.com", url: "https://www.mcmaster.com/catalog/12345", score: 45, completeness: 50, semantic: 48, ucp: 42, pricing: 40, inventory: 55, scored_at: "2026-04-11T06:00:00Z" },
+    { domain: "zoro.com", url: "https://www.zoro.com/product/G12345", score: 86, completeness: 91, semantic: 87, ucp: 83, pricing: 84, inventory: 93, scored_at: "2026-04-11T06:00:00Z" },
+    { domain: "globalindustrial.com", url: "https://www.globalindustrial.com/p/product/123456", score: 78, completeness: 83, semantic: 79, ucp: 75, pricing: 77, inventory: 86, scored_at: "2026-04-11T06:00:00Z" },
+    { domain: "rs-online.com", url: "https://us.rs-online.com/product/123456", score: 74, completeness: 79, semantic: 75, ucp: 71, pricing: 73, inventory: 83, scored_at: "2026-04-11T06:00:00Z" },
+    { domain: "digikey.com", url: "https://www.digikey.com/en/products/detail/part/123456", score: 88, completeness: 93, semantic: 89, ucp: 86, pricing: 85, inventory: 94, scored_at: "2026-04-11T06:00:00Z" },
+    { domain: "mouser.com", url: "https://www.mouser.com/ProductDetail/123456", score: 86, completeness: 91, semantic: 87, ucp: 83, pricing: 84, inventory: 92, scored_at: "2026-04-11T06:00:00Z" },
+    { domain: "newark.com", url: "https://www.newark.com/product/123456", score: 82, completeness: 87, semantic: 83, ucp: 79, pricing: 81, inventory: 89, scored_at: "2026-04-11T06:00:00Z" },
+    { domain: "mscdirect.com", url: "https://www.mscdirect.com/product/12345678", score: 81, completeness: 86, semantic: 82, ucp: 78, pricing: 80, inventory: 88, scored_at: "2026-04-11T06:00:00Z" },
+    { domain: "ikea.com", url: "https://www.ikea.com/us/en/p/product-12345678", score: 72, completeness: 77, semantic: 73, ucp: 69, pricing: 71, inventory: 81, scored_at: "2026-04-11T06:00:00Z" },
+    { domain: "asos.com", url: "https://www.asos.com/product/123456", score: 70, completeness: 75, semantic: 71, ucp: 67, pricing: 69, inventory: 79, scored_at: "2026-04-11T06:00:00Z" },
+    { domain: "webstaurantstore.com", url: "https://www.webstaurantstore.com/product/123456.html", score: 85, completeness: 90, semantic: 86, ucp: 82, pricing: 83, inventory: 91, scored_at: "2026-04-11T06:00:00Z" }
   ];
 
-  var DIMENSIONS = ['completeness', 'confidence', 'structure', 'actionability', 'freshness'];
+  var DIMENSIONS = ['completeness', 'semantic', 'ucp', 'pricing', 'inventory'];
+  var DIMENSION_API_NAMES = {
+    completeness: 'structured_data_completeness',
+    semantic: 'semantic_richness',
+    ucp: 'ucp_compatibility',
+    pricing: 'pricing_clarity',
+    inventory: 'inventory_signal_quality'
+  };
+  var DIMENSION_DISPLAY_NAMES = {
+    completeness: 'Completeness',
+    semantic: 'Semantic Richness',
+    ucp: 'UCP Compatibility',
+    pricing: 'Pricing Clarity',
+    inventory: 'Inventory Signals'
+  };
   var currentSort = { key: 'score', dir: 'desc' };
   var expandedDomain = null;
   var data = [];
@@ -339,10 +353,10 @@
         '<td class="domain-cell">' + row.domain + '</td>' +
         '<td class="score-cell ' + scoreClass(row.score) + '">' + row.score + '</td>' +
         '<td class="dim-cell">' + row.completeness + '</td>' +
-        '<td class="dim-cell">' + row.confidence + '</td>' +
-        '<td class="dim-cell">' + row.structure + '</td>' +
-        '<td class="dim-cell">' + row.actionability + '</td>' +
-        '<td class="dim-cell">' + row.freshness + '</td>' +
+        '<td class="dim-cell">' + row.semantic + '</td>' +
+        '<td class="dim-cell">' + row.ucp + '</td>' +
+        '<td class="dim-cell">' + row.pricing + '</td>' +
+        '<td class="dim-cell">' + row.inventory + '</td>' +
         '<td class="time-cell">' + relativeTime(row.scored_at) + '</td>';
 
       tr.addEventListener('click', function () {
@@ -384,9 +398,10 @@
 
     DIMENSIONS.forEach(function (dim) {
       var val = row[dim];
-      var label = dim.charAt(0).toUpperCase() + dim.slice(1);
+      var displayName = DIMENSION_DISPLAY_NAMES[dim] || dim;
+      var apiName = DIMENSION_API_NAMES[dim] || dim;
       html += '<div class="detail-bar-item">';
-      html += '<span class="detail-bar-label">' + label + '</span>';
+      html += '<span class="detail-bar-label" title="' + apiName + '">' + displayName + '</span>';
       html += '<div class="detail-bar-track"><div class="detail-bar-fill ' + barClass(val) + '" style="width:' + val + '%"></div></div>';
       html += '<span class="detail-bar-value">' + val + '</span>';
       html += '</div>';
