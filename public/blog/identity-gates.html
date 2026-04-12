@@ -44,6 +44,8 @@
 
       <p><strong>The identity layer.</strong> RFC 9421 signature compliance. ShopGraph acts as a trusted proxy, handling the cryptographic handshakes that CDN security gates require. Your agents inherit ShopGraph's verified identity at the CDN layer. You don't manage proxies, keys, or identity infrastructure.</p>
 
+      <p>Because ShopGraph's verified identity is the shared resource, it is also the shared liability. One bad actor abusing the proxy would burn the reputation for every legitimate user. The system enforces per-agent rate limits, monitors for usage anomalies, and isolates tenant traffic so that one integration's behavior doesn't degrade access for others.</p>
+
       <p>The portfolio went from a single MCP server to: a REST API, an MCP server, n8n/Make.com/Power Automate integration nodes (in testing), a <a href="/leaderboard">public leaderboard</a> scoring how agent-ready commerce sites are, and framework PRs for Vercel AI SDK and LangChain shipping this week.</p>
 
       <div style="width:780px;max-width:calc(100vw - 2rem);margin:1.5rem 0">

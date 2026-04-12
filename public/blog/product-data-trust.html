@@ -71,6 +71,8 @@
 
       <p>The third: <strong>agents need the score at call time, not as a separate lookup</strong>. If you have to make a second API call to check confidence, most integrations won't bother. The score has to ship inline with the data, in the same response, in the same object. That's why ShopGraph returns confidence as a sibling field to every extracted value.</p>
 
+      <p>The fourth: <strong>MCP directories don't drive adoption</strong>. I listed ShopGraph on every MCP directory I could find: Glama, Smithery, mcpservers.org, MCP Market, the Official MCP Registry. Zero usage. Not low usage. Zero. But even if they had driven traffic, there is a paradigm mismatch. MCP is currently indexed heavily toward desktop chat clients (Claude Desktop, Cursor). The B2B data teams who need this infrastructure build headless, server-side pipelines. The REST API had to become the primary integration surface. The MCP server now acts as a wrapper around the same engine for developers already in that ecosystem. A playground where someone can paste a URL and see results without signing up. That's the conversion path. Directory listings just confirm you exist.</p>
+
       <h2>What the market is telling me</h2>
 
       <p>I started building ShopGraph for myself. The commerce platform is still running, still using ShopGraph as its data layer. But as I talked to other developers building agent-based systems, a pattern emerged: everyone has an extraction step, and everyone hits the same trust problem.</p>
