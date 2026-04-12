@@ -50,15 +50,51 @@
     return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   }
 
+  // Short labels for long h2 text in the subnav
+  var SUBNAV_LABELS = {
+    // Self-Healing
+    'Extraction Pipeline Overview': 'Overview',
+    'The Escalation Logic': 'Escalation',
+    'Latency & Cost Tradeoffs': 'Latency & Cost',
+    'Payload Transparency': 'Payload',
+    'Continuous Calibration': 'Calibration',
+    // Confidence
+    'How It Works': 'How It Works',
+    'Tier Baselines': 'Baselines',
+    'Field Modifiers': 'Modifiers',
+    'strict_confidence_threshold': 'Threshold',
+    'Choosing Your Confidence Strategy': 'Strategy',
+    'Response Example': 'Response',
+    // UCP
+    'What is UCP?': 'What is UCP?',
+    'Using UCP Output': 'Usage',
+    'UCP Line Item Output': 'Line Item',
+    'Key Differences from Standard Output': 'Key Differences',
+    'Extraction Status': 'Status',
+    // AgentReady
+    'What is AgentReady Scoring?': 'Overview',
+    'Six Dimensions': 'Dimensions',
+    'Response Example': 'Response',
+    'B2B Awareness': 'B2B',
+    // MCP
+    'Configuration': 'Configuration',
+    'Error Handling': 'Errors',
+    // Examples (all pages)
+    'Example: Procurement Agent': 'Example',
+    'Example: Catalog Ingestion': 'Example',
+    'Example: URL Prioritization': 'Example',
+    'Example: Fire-and-Forget Extraction': 'Example',
+    'Example: Agent Tool Call': 'Example',
+  };
+
   function buildSubnav(parentLi) {
     var h2s = document.querySelectorAll('.content-inner h2');
-    if (h2s.length < 2) return; // Don't show subnav for pages with 0-1 sections
+    if (h2s.length < 2) return;
 
     var subUl = document.createElement('ul');
     subUl.className = 'nav-subitems';
 
     h2s.forEach(function (h2) {
-      // Ensure h2 has an id for anchor linking
       if (!h2.id) {
         h2.id = slugify(h2.textContent);
       }
@@ -67,7 +103,8 @@
       subLi.className = 'nav-subitem';
       var subA = document.createElement('a');
       subA.href = '#' + h2.id;
-      subA.textContent = h2.textContent;
+      var label = SUBNAV_LABELS[h2.textContent] || h2.textContent;
+      subA.textContent = label;
       subA.addEventListener('click', function (e) {
         e.preventDefault();
         var target = document.getElementById(h2.id);
