@@ -66,11 +66,11 @@
 
       <h2>Design Principles</h2>
       <ul>
-        <li><strong>Transparent uncertainty.</strong> Every field reports how confident the system is. No silent failures.</li>
-        <li><strong>Protocol-native access.</strong> Earn CDN trust through RFC 9421 signatures, not proxy rotation.</li>
-        <li><strong>Schema-first output.</strong> UCP-compliant JSON. One schema regardless of merchant architecture.</li>
-        <li><strong>Extraction-tier-aware.</strong> Downstream systems know how data was acquired, not just what was acquired.</li>
-        <li><strong>Scoring over filtering.</strong> Return all data with quality signals. Let the consumer decide what to trust.</li>
+        <li><strong>Transparent uncertainty.</strong> Every field tells you how confident the system is. You decide what to trust.</li>
+        <li><strong>Access without infrastructure.</strong> Your agents reach product data behind CDN security gates. You don't manage proxies or identity stacks.</li>
+        <li><strong>One schema, any merchant.</strong> Every response follows the same structure regardless of the source site. Write one parser, use it everywhere.</li>
+        <li><strong>Full provenance.</strong> Every response shows which extraction method produced each field. Your downstream systems make informed decisions.</li>
+        <li><strong>Your threshold, your rules.</strong> All data comes back with quality signals attached. You set the bar for what's trusted, flagged, or rejected.</li>
       </ul>
 
       <div class="feature-list">

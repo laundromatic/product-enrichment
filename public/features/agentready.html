@@ -18,6 +18,10 @@
       <h1>AgentReady Scoring</h1>
       <p class="subtitle">A composite score that tells agents how ready product data is for automated decision-making.</p>
 
+      <blockquote style="border-left:2px solid rgba(0,0,0,0.08);padding-left:1rem;margin:1rem 0;font-size:0.8125rem;color:var(--text-secondary)">
+        <strong>Design Principle:</strong> Your threshold, your rules. All data comes back with quality signals attached. You set the bar for what's trusted, flagged, or rejected.
+      </blockquote>
+
       <h2>What is AgentReady Scoring?</h2>
       <p>AgentReady scoring evaluates extracted product data across six dimensions to produce a single score (0-100) indicating how suitable the data is for autonomous agent workflows like purchasing, comparison, or inventory management.</p>
 
@@ -154,6 +158,29 @@
         <li><strong>Bulk pricing tiers</strong> — volume discount breakpoints</li>
         <li><strong>Manufacturer part number</strong> — cross-reference capability</li>
       </ul>
+
+      <h2>Example: URL Prioritization</h2>
+      <p>Before committing pipeline resources, score a batch of supplier URLs. Rank by AgentReady score. Process high-readiness domains first, defer low-scoring URLs for manual review.</p>
+      <div class="code-header"><span>JavaScript</span><button class="copy-btn">Copy</button></div>
+      <pre data-lang="javascript"><code>const urls = await loadSupplierUrls();  // 50 candidate URLs
+const scored = [];
+
+for (const url of urls) {
+  const res = await fetch('https://shopgraph.dev/api/enrich', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer sg_live_your_key'
+    },
+    body: JSON.stringify({ url, include_score: true })
+  });
+  const data = await res.json();
+  scored.push({ url, score: data.agent_readiness_score });
+}
+
+// Process highest-readiness URLs first
+scored.sort((a, b) => b.score - a.score);</code></pre>
+      <p style="font-size:0.75rem;color:var(--text-muted)">Quantitative triage. Allocate pipeline resources to the URLs most likely to return complete, actionable data.</p>
 
       <div class="alert alert-info">
         <strong>What this unlocks:</strong> Quantitative evaluation of extraction targets. Score URLs before committing pipeline resources. Prioritize high-readiness domains. Compare suppliers on data quality, not just price.

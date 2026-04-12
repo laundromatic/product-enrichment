@@ -18,6 +18,10 @@
       <h1>MCP Server</h1>
       <p class="subtitle">Connect ShopGraph to any MCP-compatible AI client with one line of config.</p>
 
+      <blockquote style="border-left:2px solid rgba(0,0,0,0.08);padding-left:1rem;margin:1rem 0;font-size:0.8125rem;color:var(--text-secondary)">
+        <strong>Design Principle:</strong> Access without infrastructure. Your agents reach product data behind CDN security gates. You don't manage proxies or identity stacks.
+      </blockquote>
+
       <h2>Configuration</h2>
 
       <h3>Remote Server (recommended)</h3>
@@ -115,6 +119,18 @@
 
       <h2>Error Handling</h2>
       <p>MCP tool calls return errors as structured JSON objects with <code>isError: true</code>. Common error types: <code>extraction_failed</code> (page could not be parsed), <code>payment_required</code> (free tier exhausted, payment method needed), <code>payment_failed</code> (charge declined), <code>ucp_mapping_failed</code> (product data could not map to UCP format). Your agent can inspect the <code>error</code> field and retry or surface the <code>message</code> to the user.</p>
+
+      <h2>Example: Agent Tool Call</h2>
+      <p>A Claude or CrewAI agent calls ShopGraph as an MCP tool mid-workflow. The agent extracts product data, evaluates confidence, and decides whether to proceed or escalate to a human.</p>
+      <div class="code-header"><span>JSON</span><button class="copy-btn">Copy</button></div>
+      <pre data-lang="json"><code>{
+  "tool": "enrich_product",
+  "arguments": {
+    "url": "https://www.grainger.com/product/DAYTON-1-2-HP-Jet-Pump-5UXK1",
+    "include_score": true
+  }
+}</code></pre>
+      <p style="font-size:0.75rem;color:var(--text-muted)">One MCP tool call. The agent gets product data with confidence scores and an AgentReady score in a single response.</p>
 
       <h2>Payment</h2>
       <p>MCP calls on the free tier (500/month) require no authentication. For paid tiers, authenticate via:</p>

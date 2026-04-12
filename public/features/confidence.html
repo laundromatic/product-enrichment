@@ -18,6 +18,10 @@
       <h1>Confidence Scoring</h1>
       <p class="subtitle">Every field in a ShopGraph response includes a confidence score from 0 to 1. This lets agents and applications make informed decisions about data quality.</p>
 
+      <blockquote style="border-left:2px solid rgba(0,0,0,0.08);padding-left:1rem;margin:1rem 0;font-size:0.8125rem;color:var(--text-secondary)">
+        <strong>Design Principle:</strong> Transparent uncertainty. Every field tells you how confident the system is. You decide what to trust.
+      </blockquote>
+
       <h2>How It Works</h2>
       <p>Confidence scoring happens in three layers:</p>
       <ol style="margin:16px 0;padding-left:24px;line-height:2">
@@ -128,6 +132,23 @@
 }</code></pre>
 
       <p>When using <code>format: ucp</code>, confidence data appears under <code>_extensions.shopgraph.field_confidence</code>. See <a href="/features/ucp">UCP Output</a> for the full mapping.</p>
+
+      <h2>Example: Procurement Agent</h2>
+      <p>An agent receives a purchase request with a supplier URL. It extracts product data, checks per-field confidence scores, auto-fills verified fields into the purchase order, and flags uncertain fields for human review.</p>
+      <div class="code-header"><span>JavaScript</span><button class="copy-btn">Copy</button></div>
+      <pre data-lang="javascript"><code>const result = await shopgraph.enrich(url, { include_score: true });
+
+for (const [field, confidence] of Object.entries(
+  result._shopgraph.field_confidence
+)) {
+  if (confidence >= 0.85) {
+    po.setField(field, result.product[field]);       // Auto-fill
+  } else if (confidence >= 0.60) {
+    po.flagForReview(field, result.product[field], confidence);
+  }
+  // Below 0.60: omit from PO
+}</code></pre>
+      <p style="font-size:0.75rem;color:var(--text-muted)">Per-field confidence routing. The agent makes field-level trust decisions instead of accepting or rejecting the entire response.</p>
 
       <div class="alert alert-info">
         <strong>What this unlocks:</strong> Per-field routing in agent workflows. Autonomous action on high-confidence fields, human review on uncertain ones, rejection of unreliable data. Your agent makes field-level decisions instead of all-or-nothing accept/reject.

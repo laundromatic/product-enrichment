@@ -18,6 +18,10 @@
       <h1>UCP Output</h1>
       <p class="subtitle">Standardize your procurement and agent pipelines. Native Universal Commerce Protocol (UCP) JSON output.</p>
 
+      <blockquote style="border-left:2px solid rgba(0,0,0,0.08);padding-left:1rem;margin:1rem 0;font-size:0.8125rem;color:var(--text-secondary)">
+        <strong>Design Principle:</strong> One schema, any merchant. Every response follows the same structure regardless of the source site. Write one parser, use it everywhere.
+      </blockquote>
+
       <h2>What is UCP?</h2>
       <p>The Universal Commerce Protocol (UCP) defines a strict, unified schema for commerce data. ShopGraph extracts product data across any target URL and normalizes it into UCP line_item format. One schema, regardless of the merchant's architecture. No custom mappers per supplier.</p>
 
@@ -104,6 +108,26 @@
       </table>
 
       <p>Note: If you apply a <code>strict_confidence_threshold</code> to a request, fields falling below that threshold are omitted from the <code>line_item</code>, and the <code>_extraction_status</code> will downgrade to <code>partial</code>. For agent routing workflows, we recommend omitting the threshold and evaluating the <code>field_confidence</code> block directly.</p>
+
+      <h2>Example: Catalog Ingestion</h2>
+      <p>A nightly pipeline processes supplier URLs across Shopify, Grainger, and McMaster-Carr. Each response comes back as a UCP line_item. The pipeline writes one parser regardless of the merchant's native data format.</p>
+      <div class="code-header"><span>JavaScript</span><button class="copy-btn">Copy</button></div>
+      <pre data-lang="javascript"><code>const result = await fetch('https://shopgraph.dev/api/enrich', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer sg_live_your_key'
+  },
+  body: JSON.stringify({
+    url: supplierUrl,
+    format: 'ucp',
+    strict_confidence_threshold: 0.85
+  })
+});
+
+const data = await result.json();
+await catalog.upsert(data.line_item);  // Same shape for every merchant</code></pre>
+      <p style="font-size:0.75rem;color:var(--text-muted)">UCP output combined with threshold filtering. One integration path for any supplier URL.</p>
 
       <div class="alert alert-info">
         <strong>What this unlocks:</strong> One integration for every merchant. Your pipeline consumes UCP line_items regardless of whether the source is Shopify, Grainger, or McMaster-Carr. No per-supplier mappers. No custom parsers.

@@ -438,6 +438,10 @@
       <h1>Self-Healing Architecture</h1>
       <p class="subtitle">B2B portals and dynamic retail sites require multiple extraction strategies. ShopGraph uses a three-tier fallback pipeline to maximize extraction coverage, automatically routing around Cloudflare blocks, missing semantic data, and JavaScript-rendered DOMs.</p>
 
+      <blockquote style="border-left:2px solid rgba(0,0,0,0.08);padding-left:1rem;margin:1rem 0;font-size:0.8125rem;color:var(--text-secondary)">
+        <strong>Design Principle:</strong> Full provenance. Every response shows which extraction method produced each field. Your downstream systems make informed decisions.
+      </blockquote>
+
       <h2 class="fade-in-section">Extraction Pipeline Overview</h2>
       <div class="fade-in-section" style="width:780px;max-width:calc(100vw - 2rem);margin:1rem 0 1.5rem;transition-delay:0.1s">
         <img src="/images/extraction-pipeline.svg" alt="ShopGraph extraction pipeline — three-tier waterfall with per-field confidence scoring" style="width:100%;height:auto">
@@ -636,6 +640,22 @@
       <h2 class="fade-in-section">Continuous Calibration</h2>
       <p>The self-healing system does not just react; it measures its own accuracy. Every extraction tier is continuously benchmarked via an LLM-as-validator pipeline across a static 208-URL B2B/B2C corpus.</p>
       <a href="/methodology" class="link-arrow">Read the full calibration methodology &rarr;</a>
+
+      <h2>Example: Fire-and-Forget Extraction</h2>
+      <p>Your agent sends a URL. It does not need to know whether the data came from Schema.org markup, LLM extraction, or Playwright rendering. The pipeline handles tier selection. The agent gets structured data back with metadata showing which path succeeded.</p>
+      <div class="code-header"><span>JavaScript</span><button class="copy-btn">Copy</button></div>
+      <pre data-lang="javascript"><code>const result = await shopgraph.enrich(
+  'https://www.grainger.com/product/DAYTON-1-2-HP-Jet-Pump-5UXK1'
+);
+
+// Agent uses the data without caring about extraction tier
+console.log(result.product.title);
+// "DAYTON 1/2 HP Jet Pump"
+
+// But the metadata is there if you need it
+console.log(result._shopgraph.extraction_method);
+// "hybrid" — Playwright was needed, agent never had to know</code></pre>
+      <p style="font-size:0.75rem;color:var(--text-muted)">The agent's code is the same regardless of extraction complexity. Tier selection is the pipeline's problem.</p>
 
       <div class="alert alert-info">
         <strong>What this unlocks:</strong> Fire-and-forget extraction. Your agent sends a URL and gets structured data back. It does not need to know which extraction tier succeeded or how many fallbacks occurred.

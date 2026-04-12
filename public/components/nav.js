@@ -32,7 +32,6 @@
     {
       title: 'Resources',
       items: [
-        { label: 'Use Cases', href: '/use-cases' },
         { label: 'Changelog', href: '/changelog' },
         { label: 'Methodology', href: '/methodology' },
         { label: 'Pricing', href: '/pricing' },
