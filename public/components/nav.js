@@ -46,11 +46,63 @@
   if (currentPath !== '/' && currentPath.endsWith('/')) currentPath = currentPath.slice(0, -1);
   if (currentPath === '') currentPath = '/';
 
-  const chevronSVG = '';
+  function slugify(text) {
+    return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  }
 
-  const logoSVG = '';
+  function buildSubnav(parentLi) {
+    var h2s = document.querySelectorAll('.content-inner h2');
+    if (h2s.length < 2) return; // Don't show subnav for pages with 0-1 sections
 
-  const githubSVG = '';
+    var subUl = document.createElement('ul');
+    subUl.className = 'nav-subitems';
+
+    h2s.forEach(function (h2) {
+      // Ensure h2 has an id for anchor linking
+      if (!h2.id) {
+        h2.id = slugify(h2.textContent);
+      }
+
+      var subLi = document.createElement('li');
+      subLi.className = 'nav-subitem';
+      var subA = document.createElement('a');
+      subA.href = '#' + h2.id;
+      subA.textContent = h2.textContent;
+      subA.addEventListener('click', function (e) {
+        e.preventDefault();
+        var target = document.getElementById(h2.id);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          history.replaceState(null, '', '#' + h2.id);
+        }
+      });
+      subLi.appendChild(subA);
+      subUl.appendChild(subLi);
+    });
+
+    parentLi.appendChild(subUl);
+
+    // Scroll spy: highlight active section
+    var subLinks = subUl.querySelectorAll('.nav-subitem a');
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          var id = entry.target.id;
+          subLinks.forEach(function (link) {
+            if (link.getAttribute('href') === '#' + id) {
+              link.classList.add('active');
+            } else {
+              link.classList.remove('active');
+            }
+          });
+        }
+      });
+    }, { rootMargin: '-60px 0px -70% 0px', threshold: 0 });
+
+    h2s.forEach(function (h2) {
+      observer.observe(h2);
+    });
+  }
 
   function buildSidebar() {
     // Create mobile toggle
@@ -94,6 +146,8 @@
         a.textContent = item.label;
         if (item.href === currentPath) {
           a.className = 'active';
+          // Build subnav for the active page after DOM is ready
+          setTimeout(function () { buildSubnav(li); }, 0);
         }
         li.appendChild(a);
         ul.appendChild(li);
@@ -137,7 +191,7 @@
   // Wrap existing body content in layout structure
   function wrapContent() {
     const existingContent = document.querySelector('.content-inner');
-    if (!existingContent) return; // Already structured
+    if (!existingContent) return;
 
     buildSidebar();
   }
