@@ -66,7 +66,7 @@
     'Choosing Your Confidence Strategy': 'Strategy',
     'Response Example': 'Response',
     // UCP
-    'What is UCP?': 'What is UCP?',
+    'What is UCP?': 'UCP',
     'Using UCP Output': 'Usage',
     'UCP Line Item Output': 'Line Item',
     'Key Differences from Standard Output': 'Key Differences',
