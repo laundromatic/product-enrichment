@@ -23,11 +23,9 @@
 
 .routing-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 12px;
+  margin-bottom: 20px;
 }
 
 .routing-header-title {
@@ -113,9 +111,9 @@
 }
 
 .node-box.active {
-  background: #f0f7ff;
-  border-color: #111;
-  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.1);
+  background: #fff;
+  border-color: rgba(96, 165, 250, 0.376);
+  box-shadow: rgba(96, 165, 250, 0.145) 0px 0px 12px 4px, rgba(96, 165, 250, 0.125) 0px 0px 4px 1px;
 }
 
 .node-box.tier-schema { border-color: #16a34a; background: #f0fdf4; }
@@ -124,8 +122,10 @@
 .node-box.result-done { border-color: #16a34a; background: #f0fdf4; }
 
 .node-box.muted {
-  opacity: 0.35;
+  opacity: 0.3;
   border-style: dashed;
+  border-color: rgba(0,0,0,0.15);
+  background: #fff;
 }
 
 .node-label {
@@ -401,6 +401,18 @@
   margin-top: 8px;
 }
 
+/* Scroll-triggered fade-in */
+.fade-in-section {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.fade-in-section.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .routing-dashboard { padding: 16px; }
@@ -426,14 +438,14 @@
       <h1>Self-Healing Architecture</h1>
       <p class="subtitle">B2B portals and dynamic retail sites require multiple extraction strategies. ShopGraph uses a three-tier fallback pipeline to maximize extraction coverage, automatically routing around Cloudflare blocks, missing semantic data, and JavaScript-rendered DOMs.</p>
 
-      <h2>Extraction Pipeline Overview</h2>
-      <div style="width:780px;max-width:calc(100vw - 2rem);margin:1rem 0 1.5rem">
+      <h2 class="fade-in-section">Extraction Pipeline Overview</h2>
+      <div class="fade-in-section" style="width:780px;max-width:calc(100vw - 2rem);margin:1rem 0 1.5rem;transition-delay:0.1s">
         <img src="/images/extraction-pipeline.svg" alt="ShopGraph extraction pipeline — three-tier waterfall with per-field confidence scoring" style="width:100%;height:auto">
       </div>
-      <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:1.5rem">The pipeline runs top-to-bottom. Each tier only fires if the previous tier fails. Success at any tier exits right to confidence scoring.</p>
+      <p class="fade-in-section" style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.75rem;transition-delay:0.15s">The pipeline runs top-to-bottom. Each tier only fires if the previous tier fails. Success at any tier exits right to confidence scoring.</p>
 
       <!-- HERO: Interactive Routing Engine Dashboard -->
-      <div class="routing-dashboard" id="routing-dashboard">
+      <div class="routing-dashboard fade-in-section" id="routing-dashboard" style="transition-delay:0.2s">
         <div class="routing-header">
           <div class="routing-header-title">ShopGraph Routing Engine</div>
           <div class="routing-metrics">
@@ -545,7 +557,7 @@
       </div>
       <!-- END HERO -->
 
-      <h2>The Escalation Logic</h2>
+      <h2 class="fade-in-section">The Escalation Logic</h2>
       <p>The engine makes structured routing decisions to balance speed, cost, and accuracy without requiring downstream intervention.</p>
 
       <h3>Tier 1: Semantic Extraction (schema_org)</h3>
@@ -559,7 +571,7 @@
       <h3>Tier 3: Full Rendering (hybrid)</h3>
       <p>If the HTTP request hits a 403 (e.g., Cloudflare, Datadome) or requires JavaScript execution to reveal variant pricing, the engine spins up a headless Chrome instance to render the page with full JavaScript execution before passing the resolved DOM back to the LLM.</p>
 
-      <h2>Latency &amp; Cost Tradeoffs</h2>
+      <h2 class="fade-in-section">Latency &amp; Cost Tradeoffs</h2>
       <p>Each escalation tier adds latency and cost. Escalation improves coverage, but it introduces latency.</p>
 
       <table>
@@ -596,10 +608,10 @@
       <h3>Developer Control (max_cache_age)</h3>
       <p>You control the latency tradeoff. By default, ShopGraph forces a fresh extraction for accurate pricing. For bulk catalog ingestion where real-time inventory is not critical, pass <code>max_cache_age: 86400</code> in your request to accept 24-hour cached data and skip the Playwright rendering step entirely.</p>
 
-      <h2>Payload Transparency</h2>
+      <h2 class="fade-in-section">Payload Transparency</h2>
       <p>Your downstream orchestrator must know how the data was acquired. ShopGraph attaches a <code>_shopgraph</code> metadata object to every response, allowing you to programmatically branch your agent's logic based on the extraction method used.</p>
 
-      <div class="code-header">
+      <div class="code-header fade-in-section" style="transition-delay:0.1s">
         <span>response.json</span>
         <button class="copy-btn">Copy</button>
       </div>
@@ -621,7 +633,7 @@
         If Cloudflare presents an unsolvable CAPTCHA, the pipeline fails predictably with a <code>403</code> and <code>reason: captcha_required</code>, allowing your agent to route to a human reviewer rather than hanging on a timeout.
       </div>
 
-      <h2>Continuous Calibration</h2>
+      <h2 class="fade-in-section">Continuous Calibration</h2>
       <p>The self-healing system does not just react; it measures its own accuracy. Every extraction tier is continuously benchmarked via an LLM-as-validator pipeline across a static 208-URL B2B/B2C corpus.</p>
       <a href="/methodology" class="link-arrow">Read the full calibration methodology &rarr;</a>
 
@@ -865,6 +877,24 @@
   }
 
   restoreState();
+})();
+</script>
+<script>
+// Scroll-triggered fade-in
+(function() {
+  var sections = document.querySelectorAll('.fade-in-section');
+  if (!sections.length) return;
+
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+  sections.forEach(function(s) { observer.observe(s); });
 })();
 </script>
 </body>
