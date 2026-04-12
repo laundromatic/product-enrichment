@@ -426,6 +426,12 @@
       <h1>Self-Healing Architecture</h1>
       <p class="subtitle">B2B portals and dynamic retail sites require multiple extraction strategies. ShopGraph uses a three-tier fallback pipeline to maximize extraction coverage, automatically routing around Cloudflare blocks, missing semantic data, and JavaScript-rendered DOMs.</p>
 
+      <h2>Extraction Pipeline Overview</h2>
+      <div style="width:780px;max-width:calc(100vw - 2rem);margin:1rem 0 1.5rem">
+        <img src="/images/extraction-pipeline.svg" alt="ShopGraph extraction pipeline — three-tier waterfall with per-field confidence scoring" style="width:100%;height:auto">
+      </div>
+      <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:1.5rem">The pipeline runs top-to-bottom. Each tier only fires if the previous tier fails. Success at any tier exits right to confidence scoring.</p>
+
       <!-- HERO: Interactive Routing Engine Dashboard -->
       <div class="routing-dashboard" id="routing-dashboard">
         <div class="routing-header">
