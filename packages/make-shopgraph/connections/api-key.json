@@ -32,8 +32,8 @@
     "condition": {
       "type": "number",
       "value": "{{statusCode}}",
-      "condition": "lessEqual",
-      "right": 401
+      "condition": "less",
+      "right": 400
     }
   }
 }
