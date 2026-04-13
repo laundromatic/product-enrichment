@@ -1,4 +1,20 @@
 import { FREE_TIER } from './types.js';
+import type { Redis } from '@upstash/redis';
+
+/**
+ * Check playground daily IP limit using Redis.
+ * Key pattern: playground:{ip}:{YYYY-MM-DD} with 24-hour TTL.
+ * Limit: 5 calls per IP per day.
+ */
+export async function checkPlaygroundLimit(ip: string, redis: Redis): Promise<{ allowed: boolean; used: number; limit: number }> {
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const key = `playground:${ip}:${today}`;
+  const used = await redis.incr(key);
+  if (used === 1) {
+    await redis.expire(key, 86400); // 24 hour TTL
+  }
+  return { allowed: used <= 5, used, limit: 5 };
+}
 
 /**
  * Tracks free tier usage per client per month.
@@ -6,7 +22,7 @@ import { FREE_TIER } from './types.js';
  *
  * For persistent tracking across cold starts, upgrade to Upstash KV.
  * Current approach: generous — cold starts reset the counter, giving
- * users slightly more than 500/month. This is fine for launch.
+ * users slightly more than 50/month. This is fine for launch.
  */
 export class FreeTierTracker {
   private usage: Map<string, { count: number; month: string }> = new Map();

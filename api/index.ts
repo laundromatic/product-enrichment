@@ -15,7 +15,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { createServer } from '../src/server.js';
 import { EnrichmentCache } from '../src/cache.js';
 import { PaymentManager } from '../src/payments.js';
-import { FreeTierTracker } from '../src/free-tier.js';
+import { FreeTierTracker, checkPlaygroundLimit } from '../src/free-tier.js';
 import { extractProduct, extractFromRawHtml, extractBasicFromUrl } from '../src/extract.js';
 import { TOOL_PRICING, FREE_TIER, TIER_CONFIGS } from '../src/types.js';
 import type { EnrichmentOptions, Customer, SubscriptionTier } from '../src/types.js';
@@ -385,12 +385,12 @@ app.get('/health', (_req, res) => {
     runtime: 'vercel-serverless',
     tools: ['enrich_product', 'enrich_basic', 'enrich_html'],
     api: {
-      'POST /api/enrich/basic': 'Schema.org only — 500 free calls/month',
+      'POST /api/enrich/basic': 'Schema.org only — 50 free calls/month',
       'POST /api/enrich': 'Full extraction (Schema.org → LLM) — $0.02/call',
       'POST /api/enrich/html': 'Extract from raw HTML — $0.02/call',
     },
     mcp: 'POST /mcp',
-    free_tier: '500 enrich_basic calls/month — no payment required',
+    free_tier: '50 enrich_basic calls/month — no payment required',
   });
 });
 
@@ -593,7 +593,7 @@ app.post('/api/score', async (req, res) => {
       status: 402,
       challenge: payments.createChallenge('enrich_product'),
       message: 'Payment required. Include payment_method_id in request body. Cost: $0.02',
-      free_alternative: { endpoint: '/api/enrich/basic', description: 'Schema.org only, 500 free calls/month' },
+      free_alternative: { endpoint: '/api/enrich/basic', description: 'Schema.org only, 50 free calls/month' },
     });
   }
 
@@ -723,11 +723,11 @@ app.post('/api/enrich/basic', async (req, res) => {
 
   if (usage >= FREE_TIER.MONTHLY_LIMIT) {
     return res.status(429).json({
-      error: 'free_tier_exhausted',
+      error: 'free_tier_limit',
       used: usage,
       limit: FREE_TIER.MONTHLY_LIMIT,
-      message: `Free tier limit reached (${FREE_TIER.MONTHLY_LIMIT}/month). Use enrich_product ($0.02) for paid access, or wait for next month.`,
-      upgrade: { tool: 'enrich_product', price_usd: 0.02, endpoint: '/api/enrich' },
+      message: "You've used all 50 Free API calls this month. Resets on the 1st. The Starter plan is 10,000 calls at $99/mo.",
+      pricing: 'https://shopgraph.dev/pricing',
     });
   }
 
@@ -747,6 +747,20 @@ app.post('/api/enrich/basic', async (req, res) => {
     const hasData = product.product_name !== null;
     const scoreDataBasic = includeScoreBasic ? { score: scoreAgentReadiness(product) } : {};
 
+    // If basic extraction returned empty data, return upgrade error
+    if (!hasData) {
+      return res.status(422).json({
+        error: 'basic_extraction_limited',
+        message: "This site doesn't serve product data to basic extraction. The full pipeline handles it with browser rendering and LLM fallback.",
+        upgrade: 'https://shopgraph.dev/pricing',
+        playground: 'https://shopgraph.dev',
+        product,
+        ...scoreDataBasic,
+        cached: false,
+        free_tier: { used: usage + 1, limit: FREE_TIER.MONTHLY_LIMIT },
+      });
+    }
+
     if (formatBasic === 'ucp') {
       const ucpResult = mapToUcp(product, optionsBasic);
       if (!ucpResult.valid) {
@@ -765,13 +779,93 @@ app.post('/api/enrich/basic', async (req, res) => {
       ...scoreDataBasic,
       cached: false,
       free_tier: { used: usage + 1, limit: FREE_TIER.MONTHLY_LIMIT },
-      ...(hasData ? {} : {
-        upgrade_hint: 'No Schema.org data found. Use /api/enrich ($0.02) for LLM-powered extraction.',
-      }),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Extraction failed';
+    // If extraction failed due to 403 or similar block, return upgrade error
+    if (message.includes('403') || message.includes('Forbidden') || message.includes('blocked')) {
+      return res.status(422).json({
+        error: 'basic_extraction_limited',
+        message: "This site doesn't serve product data to basic extraction. The full pipeline handles it with browser rendering and LLM fallback.",
+        upgrade: 'https://shopgraph.dev/pricing',
+        playground: 'https://shopgraph.dev',
+      });
+    }
     res.status(500).json({ error: 'extraction_failed', message });
+  }
+});
+
+// POST /api/playground — Full extraction, no auth, IP-throttled (5/day)
+app.post('/api/playground', async (req, res) => {
+  const { url } = req.body ?? {};
+  if (!url || typeof url !== 'string') {
+    return res.status(400).json({ error: 'missing_url', message: 'URL is required' });
+  }
+
+  try {
+    new URL(url);
+  } catch {
+    return res.status(400).json({ error: 'invalid_url', message: 'Invalid URL format' });
+  }
+
+  // Require Redis for playground IP tracking
+  if (!redis) {
+    return res.status(500).json({ error: 'service_unavailable', message: 'Playground requires Redis' });
+  }
+
+  // Get client IP
+  const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || 'unknown';
+
+  // Check daily IP limit (5/day)
+  const limit = await checkPlaygroundLimit(ip, redis);
+  if (!limit.allowed) {
+    return res.status(429).json({
+      error: 'playground_daily_limit',
+      message: "You've used your 5 free Playground runs for today. Resets at midnight UTC. The Free API tier gives you 50 full-pipeline calls a month.",
+      signup: 'https://shopgraph.dev/dashboard',
+      used: limit.used,
+      limit: limit.limit,
+    });
+  }
+
+  // Parse options
+  const format = parseFormat(req);
+  const includeScore = parseIncludeScore(req);
+  const rawThreshold = req.body?.strict_confidence_threshold ?? req.query?.strict_confidence_threshold;
+  const threshold = rawThreshold != null ? parseFloat(String(rawThreshold)) : undefined;
+  const options: EnrichmentOptions = {
+    strict_confidence_threshold: (threshold != null && !isNaN(threshold)) ? threshold : undefined,
+    format,
+    include_score: includeScore,
+  };
+
+  // Check cache first
+  const cached = cache.get(url);
+  if (cached) {
+    const scoreData = includeScore ? { score: scoreAgentReadiness(cached) } : {};
+    if (format === 'ucp') {
+      const ucpResult = mapToUcp(cached, options);
+      return res.json({ ...ucpResult, ...scoreData, playground: true, runs_remaining: limit.limit - limit.used, cached: true });
+    }
+    return res.json({ product: cached, ...scoreData, playground: true, runs_remaining: limit.limit - limit.used, cached: true });
+  }
+
+  // Run full extraction pipeline (same as /api/enrich but no auth)
+  try {
+    const product = await extractProduct(url, options);
+    cache.set(url, product);
+
+    const scoreData = includeScore ? { score: scoreAgentReadiness(product) } : {};
+
+    if (format === 'ucp') {
+      const ucpResult = mapToUcp(product, options);
+      return res.json({ ...ucpResult, ...scoreData, playground: true, runs_remaining: limit.limit - limit.used, cached: false });
+    }
+
+    res.json({ product, ...scoreData, playground: true, runs_remaining: limit.limit - limit.used, cached: false });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Extraction failed';
+    res.status(500).json({ error: 'extraction_failed', message, playground: true });
   }
 });
 
@@ -850,7 +944,7 @@ app.post('/api/enrich', async (req, res) => {
       status: 402,
       challenge: payments.createChallenge('enrich_product'),
       message: 'Payment required. Include payment_method_id in request body. Cost: $0.02',
-      free_alternative: { endpoint: '/api/enrich/basic', description: 'Schema.org only, 500 free calls/month' },
+      free_alternative: { endpoint: '/api/enrich/basic', description: 'Schema.org only, 50 free calls/month' },
     });
   }
 
