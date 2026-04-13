@@ -82,6 +82,8 @@
 
     if (data.error) {
       container.innerHTML = '<div style="background:#fce8e6;border-radius:8px;padding:12px;color:#611a15;font-size:13px">' + data.error + ': ' + (data.message || '') + '</div>';
+      var resultsWrap = $('pg-results');
+      if (resultsWrap) resultsWrap.classList.add('visible');
       return;
     }
 
