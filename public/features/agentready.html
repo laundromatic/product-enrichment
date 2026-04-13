@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="ShopGraph AgentReady scoring: 6-dimension scoring for AI agent readiness of product data.">
+<title>AgentReady Scoring — ShopGraph</title>
+<link rel="icon" type="image/png" href="/icon.png">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/styles/main.css">
+</head>
+<body>
+<div class="layout">
+  <div class="content">
+    <div class="content-inner">
+
+      <h1>AgentReady Scoring</h1>
+      <p class="subtitle">A composite score that tells agents how ready product data is for automated decision-making.</p>
+
+      <blockquote style="border-left:2px solid rgba(0,0,0,0.08);padding-left:1rem;margin:1rem 0;font-size:0.8125rem;color:var(--text-secondary)">
+        <strong>Design Principle:</strong> Your threshold, your rules. All data comes back with quality signals attached. You set the bar for what's trusted, flagged, or rejected.
+      </blockquote>
+
+      <h2>What is AgentReady Scoring?</h2>
+      <p>AgentReady scoring evaluates extracted product data across six dimensions to produce a single score (0-100) indicating how suitable the data is for autonomous agent workflows like purchasing, comparison, or inventory management.</p>
+
+      <h2>Six Dimensions</h2>
+      <table>
+        <thead>
+          <tr><th>Dimension</th><th>Weight</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Completeness</strong> <code>structured_data_completeness</code></td><td>0.30</td><td>Percentage of expected fields present. Core fields (title, price, currency) weighted more heavily.</td></tr>
+          <tr><td><strong>Semantic Richness</strong> <code>semantic_richness</code></td><td>0.20</td><td>Category depth, attribute count, variant coverage, and description quality.</td></tr>
+          <tr><td><strong>UCP Compatibility</strong> <code>ucp_compatibility</code></td><td>0.20</td><td>How well the extracted data maps to the Universal Commerce Protocol schema.</td></tr>
+          <tr><td><strong>Pricing Clarity</strong> <code>pricing_clarity</code></td><td>0.15</td><td>Base price, currency, sale price, and B2B signals like bulk pricing and MOQ.</td></tr>
+          <tr><td><strong>Inventory Signals</strong> <code>inventory_signal_quality</code></td><td>0.15</td><td>Stock status specificity, quantity information, lead time, and backorder signals.</td></tr>
+          <tr><td><strong>Access Readiness</strong> <code>access_readiness</code></td><td>0.00</td><td>Agent accessibility score. Activates when Web Bot Auth adoption reaches detection threshold. Currently all test corpus URLs are fully open.</td></tr>
+        </tbody>
+      </table>
+
+      <p>In API responses, these dimensions appear under their full names: <code>structured_data_completeness</code>, <code>semantic_richness</code>, <code>ucp_compatibility</code>, <code>pricing_clarity</code>, <code>inventory_signal_quality</code>, <code>access_readiness</code>.</p>
+
+      <p>AgentReady scores use a 0-100 scale. Per-field confidence scores (from the extraction pipeline) use a separate 0-1 scale. See <a href="/features/confidence">Confidence Scoring</a> for the field-level system.</p>
+
+      <h2>Usage</h2>
+      <h3>Inline with extraction</h3>
+      <p>Add <code>include_score=true</code> to any enrichment request:</p>
+      <div class="code-header"><span>Request</span><button class="copy-btn">Copy</button></div>
+      <pre data-lang="json"><code>{
+  "url": "https://www.grainger.com/product/DAYTON-1-3-HP-Condenser-Fan-Motor-4M206",
+  "include_score": true
+}</code></pre>
+
+      <h3>Standalone scoring</h3>
+      <p>Score existing product data via <code>POST /api/score</code>:</p>
+      <div class="code-header"><span>Request</span><button class="copy-btn">Copy</button></div>
+      <pre data-lang="json"><code>{
+  "product": {
+    "title": "DAYTON 1/3 HP Condenser Fan Motor",
+    "price": 142.50,
+    "currency": "USD",
+    "brand": "Dayton",
+    "sku": "4M206",
+    "availability": "InStock"
+  }
+}</code></pre>
+
+      <h2>Response Example</h2>
+      <div class="code-header"><span>AgentReady Score response</span><button class="copy-btn">Copy</button></div>
+      <pre data-lang="json"><code>{
+  "agent_readiness_score": 87,
+  "scoring_breakdown": {
+    "structured_data_completeness": {
+      "score": 92,
+      "weight": 0.30,
+      "weighted_contribution": 27.6,
+      "details": {
+        "title": "present",
+        "price": "present",
+        "description": "present",
+        "availability": "present",
+        "images": "present",
+        "brand": "present",
+        "categories": "missing",
+        "specs": "present"
+      }
+    },
+    "semantic_richness": {
+      "score": 68,
+      "weight": 0.20,
+      "weighted_contribution": 13.6,
+      "details": {
+        "category_count": 3,
+        "attribute_count": 4,
+        "variant_signals": 1,
+        "description_length": 220
+      }
+    },
+    "ucp_compatibility": {
+      "score": 85,
+      "weight": 0.20,
+      "weighted_contribution": 17.0,
+      "details": {
+        "required_present": 3,
+        "required_total": 3,
+        "optional_present": 5,
+        "optional_total": 8,
+        "ucp_mapping_valid": true
+      }
+    },
+    "pricing_clarity": {
+      "score": 80,
+      "weight": 0.15,
+      "weighted_contribution": 12.0,
+      "details": {
+        "base_price": true,
+        "currency": true,
+        "sale_price": false,
+        "bulk_pricing_detected": true,
+        "moq_detected": false
+      }
+    },
+    "inventory_signal_quality": {
+      "score": 75,
+      "weight": 0.15,
+      "weighted_contribution": 11.25,
+      "details": {
+        "stock_status": true,
+        "stock_status_value": "in_stock",
+        "quantity_available": false,
+        "lead_time_detected": true,
+        "backorder_detected": false
+      }
+    },
+    "access_readiness": {
+      "score": 100,
+      "weight": 0.00,
+      "weighted_contribution": 0,
+      "details": {
+        "access_level": 5,
+        "access_label": "fully_open",
+        "feature_flag_active": false,
+        "note": "Access readiness scoring activates when Web Bot Auth adoption reaches detection threshold."
+      }
+    }
+  },
+  "scoring_version": "2026-04-08-v1",
+  "methodology_url": "https://shopgraph.dev/methodology"
+}</code></pre>
+
+      <h2>B2B Awareness</h2>
+      <p>For B2B products, the scoring system detects and rewards additional fields:</p>
+      <ul style="margin:16px 0;padding-left:24px;line-height:2">
+        <li><strong>MOQ (Minimum Order Quantity)</strong> — detected from product pages</li>
+        <li><strong>Lead time</strong> — shipping/delivery time for bulk orders</li>
+        <li><strong>Bulk pricing tiers</strong> — volume discount breakpoints</li>
+        <li><strong>Manufacturer part number</strong> — cross-reference capability</li>
+      </ul>
+
+      <h2>Example: URL Prioritization</h2>
+      <p>Before committing pipeline resources, score a batch of supplier URLs. Rank by AgentReady score. Process high-readiness domains first, defer low-scoring URLs for manual review.</p>
+      <div class="code-header"><span>JavaScript</span><button class="copy-btn">Copy</button></div>
+      <pre data-lang="javascript"><code>const urls = await loadSupplierUrls();  // 50 candidate URLs
+const scored = [];
+
+for (const url of urls) {
+  const res = await fetch('https://shopgraph.dev/api/enrich', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer sg_live_your_key'
+    },
+    body: JSON.stringify({ url, include_score: true })
+  });
+  const data = await res.json();
+  scored.push({ url, score: data.agent_readiness_score });
+}
+
+// Process highest-readiness URLs first
+scored.sort((a, b) => b.score - a.score);</code></pre>
+      <p style="font-size:0.75rem;color:var(--text-muted)">Quantitative triage. Allocate pipeline resources to the URLs most likely to return complete, actionable data.</p>
+
+      <div class="alert alert-info">
+        <strong>What this unlocks:</strong> Quantitative evaluation of extraction targets. Score URLs before committing pipeline resources. Prioritize high-readiness domains. Compare suppliers on data quality, not just price.
+      </div>
+
+      <div class="alert alert-info">
+        See the full <a href="/output/agentready-score">AgentReady Score schema</a> and the <a href="/methodology">scoring methodology</a> for weights and calibration details.
+      </div>
+
+    </div>
+  </div>
+</div>
+<script src="/components/nav.js"></script>
+<script src="/components/code-highlight.js"></script>
+</body>
+</html>

@@ -1,68 +1,104 @@
 # ShopGraph — Make.com Custom App
 
-Extract structured product data from any open-web product URL with per-field confidence scores, UCP-compatible output, and agent-readiness scoring.
+Authenticated product data extraction. Extract structured product data from any product page URL or raw HTML, with per-field confidence scores and UCP-compatible output.
 
 **Website:** [shopgraph.dev](https://shopgraph.dev)
 
-## Installation
+## Setup
+
+### 1. Create the Custom App
 
 1. In Make.com, go to **My Apps** in the left sidebar.
 2. Click **Create a new app**.
-3. Import the JSON files from this directory:
-   - `base.json` as the app base configuration
-   - `connections/api-key.json` as the connection definition
-   - Each file in `modules/` as a separate module definition
-   - `common.json` contains shared parameter definitions for reference
-4. Save and publish the app to your organization.
+3. Set the app name to "ShopGraph" and import the configuration files:
+   - `app.json` — app metadata (name, label, description, version)
+   - `base.json` — base HTTP configuration (URL, default headers)
+   - `connections/api-key.json` — connection definition (API key auth)
+4. Save the app.
 
-## Available Modules
+### 2. Add Modules
 
-### Enrich Product (Full)
-**Endpoint:** `POST /api/enrich`
-Full extraction using Schema.org + LLM + browser fallback. Returns comprehensive product data with per-field confidence scores. Cost: $0.02/call.
+For each module directory under `modules/`, create a new module in your app:
 
-### Enrich Product (Basic)
-**Endpoint:** `POST /api/enrich/basic`
-Schema.org-only extraction. Free tier: 500 calls/month, no API key required. Good for pages with well-structured markup.
+- **enrich-product** — Extract product data from a URL
+- **enrich-html** — Extract product data from raw HTML
+
+Each module directory contains four files:
+
+| File | Purpose |
+|------|---------|
+| `communication.json` | HTTP request/response configuration |
+| `parameters.json` | Input fields shown to the user |
+| `expect.json` | Expected output field definitions |
+| `interface.json` | Output mapping for downstream modules |
+
+### 3. Configure a Connection
+
+When adding the ShopGraph module to a scenario, create a connection:
+
+- **API Key** (required): Your ShopGraph API key, starting with `sg_live_`. Get one at [shopgraph.dev/dashboard](https://shopgraph.dev/dashboard).
+- **Base URL** (optional): Defaults to `https://shopgraph.dev`. Only change for self-hosted instances.
+
+## Modules
+
+### Enrich Product
+
+Extract structured product data from a URL.
+
+- **Endpoint:** `POST /api/enrich`
+- **Input:** Product URL (required), Output Format (optional, default: shopgraph)
+- **Output:** Product object with name, brand, price, availability, categories, confidence scores, and ShopGraph metadata
 
 ### Enrich from HTML
-**Endpoint:** `POST /api/enrich/html`
-Extract product data from raw HTML you already have. Requires both the HTML content and the original page URL (for context). Cost: $0.02/call.
 
-### Score Product
-**Endpoint:** `POST /api/score`
-Full extraction plus an AgentReady score (0-100) indicating how well-structured the extracted data is for AI agent consumption. Cost: $0.02/call.
+Extract structured product data from raw HTML content you already have.
 
-## Authentication
-
-All modules support API key authentication via the `Authorization: Bearer <key>` header. Get your API key at [shopgraph.dev/dashboard](https://shopgraph.dev/dashboard).
-
-The **Enrich Product (Basic)** module works without an API key on the free tier (500 calls/month per IP).
+- **Endpoint:** `POST /api/enrich`
+- **Input:** HTML content (required, multiline), Output Format (optional, default: shopgraph)
+- **Output:** Same product object as Enrich Product
 
 ## Output Formats
 
-- **Default (ProductData):** Structured JSON with per-field confidence scores
-- **UCP (Universal Commerce Protocol):** Standardized commerce data format
+- **ShopGraph** (default): Structured JSON with per-field confidence scores and extraction metadata
+- **UCP**: Universal Commerce Protocol — standardized commerce data format
 
-## Common Parameters
+## Example Output
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| Confidence Threshold | Number (0.0-1.0) | Fields below this confidence are scrubbed to null |
-| Output Format | Select | Default (ProductData) or UCP |
-| Include AgentReady Score | Boolean | Adds agent-readiness score to response |
+```json
+{
+  "product": {
+    "url": "https://www.grainger.com/product/DAYTON-1-2-HP-Jet-Pump-5UXK1",
+    "product_name": "DAYTON 1/2 HP Jet Pump, Model 5UXK1",
+    "brand": "DAYTON",
+    "price": { "amount": 284.00, "currency": "USD" },
+    "availability": "in_stock",
+    "categories": ["Jet Pumps", "Pumps", "Plumbing"],
+    "confidence": { "overall": 0.93 },
+    "_shopgraph": { "extraction_method": "schema_org", "data_source": "live" }
+  },
+  "cached": false,
+  "credit_mode": "standard"
+}
+```
 
 ## File Structure
 
 ```
 packages/make-shopgraph/
-  base.json                  — App base configuration
-  common.json                — Shared parameter definitions
+  app.json                              — App metadata
+  base.json                             — Base HTTP configuration
   connections/
-    api-key.json             — API key connection definition
+    api-key.json                        — API key connection
   modules/
-    enrich-product.json      — Full extraction module
-    enrich-basic.json        — Basic (free) extraction module
-    enrich-html.json         — HTML extraction module
-    score-product.json       — AgentReady scoring module
+    enrich-product/
+      communication.json                — HTTP config
+      parameters.json                   — Input fields
+      expect.json                       — Output schema
+      interface.json                    — Output mapping
+    enrich-html/
+      communication.json                — HTTP config
+      parameters.json                   — Input fields
+      expect.json                       — Output schema
+      interface.json                    — Output mapping
+  README.md
 ```

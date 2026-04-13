@@ -15,7 +15,7 @@ export class ShopGraph implements INodeType {
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["operation"]}}',
-		description: 'Extract structured product data with confidence scores',
+		description: 'Authenticated product data extraction',
 		defaults: {
 			name: 'ShopGraph',
 		},
@@ -24,7 +24,7 @@ export class ShopGraph implements INodeType {
 		credentials: [
 			{
 				name: 'shopGraphApi',
-				required: false,
+				required: true,
 			},
 		],
 		properties: [
@@ -36,34 +36,22 @@ export class ShopGraph implements INodeType {
 				noDataExpression: true,
 				options: [
 					{
-						name: 'Enrich Product',
-						value: 'enrich_product',
-						description: 'Extract full structured product data from a URL',
-						action: 'Enrich product',
-					},
-					{
-						name: 'Enrich Basic',
-						value: 'enrich_basic',
-						description: 'Extract basic product data (free tier, no API key required)',
-						action: 'Enrich basic',
+						name: 'Enrich',
+						value: 'enrich',
+						description: 'Extract product data from a URL',
+						action: 'Extract product data from a URL',
 					},
 					{
 						name: 'Enrich HTML',
-						value: 'enrich_html',
+						value: 'enrichHtml',
 						description: 'Extract product data from raw HTML',
-						action: 'Enrich HTML',
-					},
-					{
-						name: 'Score Product',
-						value: 'score_product',
-						description: 'Get product data quality scores for a URL',
-						action: 'Score product',
+						action: 'Extract product data from raw HTML',
 					},
 				],
-				default: 'enrich_product',
+				default: 'enrich',
 			},
 
-			// ------ URL field (all operations except enrich_html use it as sole required input) ------
+			// ------ URL field (enrich operation) ------
 			{
 				displayName: 'URL',
 				name: 'url',
@@ -74,12 +62,12 @@ export class ShopGraph implements INodeType {
 				description: 'Product page URL to extract data from',
 				displayOptions: {
 					show: {
-						operation: ['enrich_product', 'enrich_basic', 'score_product'],
+						operation: ['enrich'],
 					},
 				},
 			},
 
-			// ------ Enrich HTML specific fields ------
+			// ------ HTML field (enrichHtml operation) ------
 			{
 				displayName: 'HTML',
 				name: 'html',
@@ -93,122 +81,28 @@ export class ShopGraph implements INodeType {
 				description: 'Raw HTML of the product page',
 				displayOptions: {
 					show: {
-						operation: ['enrich_html'],
-					},
-				},
-			},
-			{
-				displayName: 'URL',
-				name: 'urlContext',
-				type: 'string',
-				required: true,
-				default: '',
-				placeholder: 'https://example.com/product/blue-widget',
-				description: 'Original URL of the page (used for context)',
-				displayOptions: {
-					show: {
-						operation: ['enrich_html'],
+						operation: ['enrichHtml'],
 					},
 				},
 			},
 
-			// ------ Shared options for enrich operations ------
+			// ------ Format (shared across both operations) ------
 			{
-				displayName: 'Options',
-				name: 'options',
-				type: 'collection',
-				placeholder: 'Add Option',
-				default: {},
-				displayOptions: {
-					show: {
-						operation: ['enrich_product', 'enrich_basic', 'enrich_html'],
-					},
-				},
+				displayName: 'Format',
+				name: 'format',
+				type: 'options',
 				options: [
 					{
-						displayName: 'Strict Confidence Threshold',
-						name: 'strict_confidence_threshold',
-						type: 'number',
-						typeOptions: {
-							minValue: 0,
-							maxValue: 1,
-							numberPrecision: 2,
-						},
-						default: 0.5,
-						description:
-							'Minimum confidence score (0-1) for fields to be included in the response',
+						name: 'ShopGraph',
+						value: 'shopgraph',
 					},
 					{
-						displayName: 'Format',
-						name: 'format',
-						type: 'options',
-						options: [
-							{
-								name: 'Default',
-								value: 'default',
-							},
-							{
-								name: 'UCP',
-								value: 'ucp',
-							},
-						],
-						default: 'default',
-						description: 'Response format',
-					},
-					{
-						displayName: 'Include Score',
-						name: 'include_score',
-						type: 'boolean',
-						default: false,
-						description: 'Whether to include confidence scores for each extracted field',
+						name: 'UCP',
+						value: 'ucp',
 					},
 				],
-			},
-
-			// ------ Options for score operation ------
-			{
-				displayName: 'Options',
-				name: 'options',
-				type: 'collection',
-				placeholder: 'Add Option',
-				default: {},
-				displayOptions: {
-					show: {
-						operation: ['score_product'],
-					},
-				},
-				options: [
-					{
-						displayName: 'Strict Confidence Threshold',
-						name: 'strict_confidence_threshold',
-						type: 'number',
-						typeOptions: {
-							minValue: 0,
-							maxValue: 1,
-							numberPrecision: 2,
-						},
-						default: 0.5,
-						description:
-							'Minimum confidence score (0-1) for fields to be included in the response',
-					},
-					{
-						displayName: 'Format',
-						name: 'format',
-						type: 'options',
-						options: [
-							{
-								name: 'Default',
-								value: 'default',
-							},
-							{
-								name: 'UCP',
-								value: 'ucp',
-							},
-						],
-						default: 'default',
-						description: 'Response format',
-					},
-				],
+				default: 'shopgraph',
+				description: 'Response format for the extracted product data',
 			},
 		],
 	};
@@ -220,35 +114,25 @@ export class ShopGraph implements INodeType {
 		for (let i = 0; i < items.length; i++) {
 			try {
 				const operation = this.getNodeParameter('operation', i) as string;
-				const options = this.getNodeParameter('options', i, {}) as {
-					strict_confidence_threshold?: number;
-					format?: string;
-					include_score?: boolean;
+				const format = this.getNodeParameter('format', i) as string;
+
+				const credentials = await this.getCredentials('shopGraphApi');
+				const baseUrl = ((credentials.baseUrl as string) || 'https://shopgraph.dev').replace(
+					/\/$/,
+					'',
+				);
+
+				const body: Record<string, unknown> = {
+					format,
 				};
 
-				let endpoint: string;
-				const body: Record<string, unknown> = {};
-
 				switch (operation) {
-					case 'enrich_product': {
-						endpoint = '/api/enrich';
+					case 'enrich': {
 						body.url = this.getNodeParameter('url', i) as string;
 						break;
 					}
-					case 'enrich_basic': {
-						endpoint = '/api/enrich/basic';
-						body.url = this.getNodeParameter('url', i) as string;
-						break;
-					}
-					case 'enrich_html': {
-						endpoint = '/api/enrich/html';
+					case 'enrichHtml': {
 						body.html = this.getNodeParameter('html', i) as string;
-						body.url = this.getNodeParameter('urlContext', i) as string;
-						break;
-					}
-					case 'score_product': {
-						endpoint = '/api/score';
-						body.url = this.getNodeParameter('url', i) as string;
 						break;
 					}
 					default:
@@ -259,45 +143,16 @@ export class ShopGraph implements INodeType {
 						);
 				}
 
-				// Apply shared options to request body
-				if (options.strict_confidence_threshold !== undefined) {
-					body.strict_confidence_threshold = options.strict_confidence_threshold;
-				}
-				if (options.format && options.format !== 'default') {
-					body.format = options.format;
-				}
-				if (options.include_score !== undefined) {
-					body.include_score = options.include_score;
-				}
-
-				// Determine whether to use authenticated or unauthenticated request
-				let credentials;
-				try {
-					credentials = await this.getCredentials('shopGraphApi');
-				} catch {
-					// No credentials configured — fine for free-tier operations
-					credentials = null;
-				}
-
-				const requestOptions = {
-					method: 'POST' as const,
-					url: `https://shopgraph.dev${endpoint}`,
-					body,
-					json: true,
-					headers: {} as Record<string, string>,
-				};
-
-				let responseData: unknown;
-
-				if (credentials?.apiKey) {
-					responseData = await this.helpers.httpRequestWithAuthentication.call(
-						this,
-						'shopGraphApi',
-						requestOptions,
-					);
-				} else {
-					responseData = await this.helpers.httpRequest(requestOptions);
-				}
+				const responseData = await this.helpers.httpRequestWithAuthentication.call(
+					this,
+					'shopGraphApi',
+					{
+						method: 'POST',
+						url: `${baseUrl}/api/enrich`,
+						body,
+						json: true,
+					},
+				);
 
 				returnData.push({
 					json: responseData as IDataObject,

@@ -10,7 +10,7 @@
 			}
 		]
 	},
-	"alias": ["product", "enrichment", "extraction", "commerce", "shopgraph", "scraper"],
+	"alias": ["product", "enrichment", "extraction", "commerce", "shopgraph"],
 	"subcategories": {
 		"Data & Storage": ["Data Transformation"]
 	}

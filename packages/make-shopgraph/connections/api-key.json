@@ -4,17 +4,36 @@
   "parameters": [
     {
       "name": "apiKey",
-      "type": "text",
+      "type": "password",
       "label": "API Key",
-      "required": false,
-      "help": "Get your API key at shopgraph.dev/dashboard. Leave empty for free tier (500 calls/month)."
+      "required": true,
+      "help": "Your ShopGraph API key (starts with sg_live_). Get one at https://shopgraph.dev/dashboard"
+    },
+    {
+      "name": "baseUrl",
+      "type": "text",
+      "label": "Base URL",
+      "required": true,
+      "default": "https://shopgraph.dev",
+      "help": "ShopGraph API base URL. Change only if using a self-hosted instance."
     }
   ],
-  "headers": {
-    "Authorization": "Bearer {{parameters.apiKey}}"
-  },
   "test": {
-    "url": "{{baseUrl}}/health",
-    "method": "GET"
+    "url": "{{baseUrl}}/api/enrich",
+    "method": "POST",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{parameters.apiKey}}"
+    },
+    "body": {
+      "url": "https://www.example.com",
+      "format": "shopgraph"
+    },
+    "condition": {
+      "type": "number",
+      "value": "{{statusCode}}",
+      "condition": "lessEqual",
+      "right": 401
+    }
   }
 }

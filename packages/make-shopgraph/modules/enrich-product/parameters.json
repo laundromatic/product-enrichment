@@ -1,0 +1,21 @@
+[
+  {
+    "name": "url",
+    "type": "text",
+    "label": "Product URL",
+    "required": true,
+    "help": "The full URL of the product page to extract data from (e.g. https://www.grainger.com/product/...)"
+  },
+  {
+    "name": "format",
+    "type": "select",
+    "label": "Output Format",
+    "required": false,
+    "default": "shopgraph",
+    "options": [
+      { "label": "ShopGraph", "value": "shopgraph" },
+      { "label": "UCP (Universal Commerce Protocol)", "value": "ucp" }
+    ],
+    "help": "Response format. ShopGraph is the default; UCP follows the Universal Commerce Protocol schema."
+  }
+]

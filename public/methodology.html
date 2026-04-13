@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="ShopGraph AgentReady scoring methodology: dimensions, weights, calibration, and versioning.">
+<title>Methodology — ShopGraph</title>
+<link rel="icon" type="image/png" href="/icon.png">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/styles/main.css">
+</head>
+<body>
+<div class="layout">
+  <div class="content">
+    <div class="content-inner">
+
+      <h1>Scoring Methodology</h1>
+      <p class="subtitle">Versioned methodology for AgentReady scoring. Current version: 2026-04-08-v1.</p>
+
+      <div class="alert alert-success">
+        <strong>UCP Schema Compatible</strong> — AgentReady scoring is validated against ucp-schema v1.1.0 <!-- TODO: link to ucp-schema when published --> field requirements.
+      </div>
+
+      <h2>Version</h2>
+      <table>
+        <thead><tr><th>Field</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Scoring version</td><td><code>2026-04-08-v1</code></td></tr>
+          <tr><td>Methodology URL</td><td><code>https://shopgraph.dev/methodology</code></td></tr>
+          <tr><td>UCP schema version</td><td>v1.1.0</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Composite Score Formula</h2>
+      <p>The overall AgentReady score is a weighted sum of six dimension scores (five currently active):</p>
+      <div class="code-header"><span>Formula</span><button class="copy-btn">Copy</button></div>
+      <pre><code>agent_readiness_score = (structured_data_completeness * 0.30)
+                     + (semantic_richness             * 0.20)
+                     + (ucp_compatibility             * 0.20)
+                     + (pricing_clarity               * 0.15)
+                     + (inventory_signal_quality       * 0.15)</code></pre>
+      <p>access_readiness is included in the response at weight 0.00. When activated, weights will be redistributed across all six dimensions.</p>
+
+      <p>AgentReady dimension scores use a 0-100 scale. Per-field confidence scores (from the extraction pipeline) use a separate 0-1 scale. These are independent scoring systems.</p>
+
+      <h2>Dimension Details</h2>
+
+      <h3>1. Structured Data Completeness (weight: 0.30)</h3>
+      <p>Measures how many expected fields are present in the extracted data. Scores on a 0-100 scale.</p>
+      <h4>Core fields</h4>
+      <ul style="margin:8px 0 16px;padding-left:24px;line-height:1.8">
+        <li><code>title</code> — Product name</li>
+        <li><code>price</code> — Numeric price</li>
+        <li><code>description</code> — Product description</li>
+        <li><code>availability</code> — Stock status</li>
+        <li><code>images</code> — Primary product image</li>
+        <li><code>brand</code> — Brand or manufacturer</li>
+        <li><code>categories</code> — Product categories</li>
+        <li><code>specs</code> — Product dimensions/specifications</li>
+      </ul>
+      <p>Base score = (fields_present / fields_expected) * 100. B2B bonus (up to 10 points) for part numbers, MOQ, lead time, and bulk pricing signals.</p>
+
+      <h3>2. Semantic Richness (weight: 0.20)</h3>
+      <p>Evaluates category depth, attribute count, variant coverage, and description quality. Scores on a 0-100 scale.</p>
+      <ul style="margin:8px 0 16px;padding-left:24px;line-height:1.8">
+        <li><strong>Category depth</strong> (max 25 pts) — Deeper category trees score higher</li>
+        <li><strong>Attribute count</strong> (max 25 pts) — Colors, materials, dimensions</li>
+        <li><strong>Variant coverage</strong> (max 25 pts) — Multiple color/material options</li>
+        <li><strong>Description quality</strong> (max 25 pts) — Length and detail of description</li>
+      </ul>
+
+      <h3>3. UCP Compatibility (weight: 0.20)</h3>
+      <p>How well the extracted data maps to the Universal Commerce Protocol schema. Scores on a 0-100 scale.</p>
+      <ul style="margin:8px 0 16px;padding-left:24px;line-height:1.8">
+        <li><strong>Required UCP fields</strong> (60%) — item.id, item.title, item.price</li>
+        <li><strong>Optional UCP fields</strong> (25%) — image, brand, description, availability, categories, currency, color, material</li>
+        <li><strong>UCP mapping validation</strong> (15%) — Actual mapping to UCP schema succeeds</li>
+      </ul>
+
+      <h3>4. Pricing Clarity (weight: 0.15)</h3>
+      <p>Evaluates price data completeness and B2B pricing signals. Scores on a 0-100 scale.</p>
+      <ul style="margin:8px 0 16px;padding-left:24px;line-height:1.8">
+        <li><strong>Base price present</strong> (40 pts)</li>
+        <li><strong>Currency present</strong> (20 pts)</li>
+        <li><strong>Sale price info</strong> (15 pts)</li>
+        <li><strong>Bulk/tier pricing detected</strong> (15 pts)</li>
+        <li><strong>MOQ detected</strong> (10 pts)</li>
+      </ul>
+
+      <h3>5. Inventory Signal Quality (weight: 0.15)</h3>
+      <p>Measures specificity of stock and fulfillment data. Scores on a 0-100 scale.</p>
+      <ul style="margin:8px 0 16px;padding-left:24px;line-height:1.8">
+        <li><strong>Stock status present</strong> (40 pts)</li>
+        <li><strong>Quantity information</strong> (25 pts)</li>
+        <li><strong>Lead time detected</strong> (20 pts)</li>
+        <li><strong>Backorder info</strong> (15 pts)</li>
+      </ul>
+
+      <h3>6. Access Readiness (weight: 0.00)</h3>
+      <p>Evaluates whether the target URL requires agent-specific authentication or identity handshakes. Scores on a 0-100 scale. Currently inactive (weight 0.00). All URLs in the test corpus are openly accessible. This dimension activates when Web Bot Auth adoption reaches detection threshold (&gt;10% of test URLs returning Web Bot Auth headers). When active, weights will be redistributed across all six dimensions.</p>
+
+      <h2>Calibration Approach</h2>
+      <p>Scores are calibrated against a 208-URL ground-truth dataset:</p>
+      <ol style="margin:16px 0;padding-left:24px;line-height:2">
+        <li><strong>Ground truth collection</strong> — Human-verified product data for 208 URLs across 22 verticals.</li>
+        <li><strong>Automated testing</strong> — Extraction tests run every 30 minutes via cron.</li>
+        <li><strong>Accuracy measurement</strong> — Extracted values compared against ground truth field-by-field.</li>
+        <li><strong>Baseline adjustment</strong> — Extraction method baselines updated when measured accuracy diverges from predicted confidence by more than 5%.</li>
+        <li><strong>Version bumping</strong> — When baselines change, the scoring version is incremented.</li>
+      </ol>
+
+      <div class="alert alert-info">
+        This methodology is versioned. The <code>scoring_version</code> field in every AgentReady score response references a specific revision of this document.
+      </div>
+
+      <h2>Version History</h2>
+      <p>2026-04-08-v1 — Initial methodology release. Five active dimensions, access_readiness stubbed at weight 0.00. Calibrated against 208-URL ground-truth dataset across 22 verticals.</p>
+
+    </div>
+  </div>
+</div>
+<script src="/components/nav.js"></script>
+<script src="/components/code-highlight.js"></script>
+</body>
+</html>

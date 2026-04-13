@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="ShopGraph developer dashboard. Manage your API key, view usage, and upgrade your plan.">
+<title>Developer Dashboard — ShopGraph</title>
+<link rel="icon" type="image/png" href="/icon.png">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/styles/main.css">
+<style>
+  .login-wrap {
+    max-width: 320px;
+    margin: 4rem auto;
+    text-align: center;
+  }
+
+  .login-wrap p {
+    text-align: center;
+  }
+
+  .login-wrap input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+    font-family: var(--font-mono);
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 0.375rem;
+    background: #fff;
+    color: var(--body-color);
+    outline: none;
+    margin-bottom: 0.75rem;
+  }
+
+  .login-wrap input:focus {
+    border-color: rgba(0, 0, 0, 0.3);
+  }
+
+  .login-wrap .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .dashboard-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.375rem 0;
+    font-size: 0.8125rem;
+  }
+
+  .stat-label {
+    color: var(--text-secondary);
+  }
+
+  .stat-value {
+    font-variation-settings: "wght" 550;
+  }
+
+  .progress-track {
+    width: 100%;
+    height: 4px;
+    background: rgba(0, 0, 0, 0.06);
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 0.5rem 0;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--body-color);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+
+  .progress-fill.warning { background: #d97706; }
+  .progress-fill.danger { background: #dc2626; }
+
+  .key-box {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    margin: 0.5rem 0;
+  }
+
+  .key-box span {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .key-box button {
+    font-size: 0.6875rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .tier-label {
+    display: inline-block;
+    font-size: 0.6875rem;
+    font-variation-settings: "wght" 550;
+    padding: 0.125rem 0.5rem;
+    border-radius: 1rem;
+    letter-spacing: 0.02em;
+  }
+
+  .tier-free { background: rgba(0, 0, 0, 0.04); color: var(--text-secondary); }
+  .tier-starter { background: rgba(36, 128, 237, 0.08); color: var(--link-color); }
+  .tier-growth { background: rgba(22, 163, 74, 0.08); color: #16a34a; }
+  .tier-enterprise { background: rgba(168, 85, 247, 0.08); color: #7c3aed; }
+
+  .actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+  }
+
+  .btn-danger {
+    background: transparent;
+    color: #dc2626;
+    box-shadow: inset 0 0 0 1px rgba(220, 38, 38, 0.2);
+    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+  }
+
+  .btn-danger:hover {
+    background: rgba(220, 38, 38, 0.04);
+  }
+
+  .msg-error { color: #dc2626; font-size: 0.8125rem; margin-top: 0.5rem; }
+  .msg-success { color: #16a34a; font-size: 0.8125rem; margin-top: 0.5rem; }
+  .hidden { display: none; }
+
+  .back-link {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+    display: block;
+  }
+
+  .back-link:hover {
+    color: var(--text-secondary);
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <div class="content">
+    <div class="content-inner">
+
+      <!-- Login view -->
+      <div id="login-view" class="login-wrap">
+        <h1>Developer Dashboard</h1>
+        <p class="subtitle">Sign in with your API key to manage your ShopGraph account, view usage, and upgrade your plan.</p>
+        <input type="text" id="api-key-input" placeholder="sg_live_..." />
+        <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="loginWithKey()">Sign In</button>
+        <div id="login-error" class="msg-error hidden"></div>
+        <p style="margin-top:1rem;font-size:0.75rem;color:var(--text-muted)">
+          No API key yet? <a href="/install">Get started</a> or see <a href="/pricing">Pricing</a>.
+        </p>
+      </div>
+
+      <!-- Dashboard view -->
+      <div id="dashboard-view" class="hidden">
+        <a href="/" class="back-link">Back to docs</a>
+        <h1>Developer Dashboard</h1>
+        <p class="subtitle">Manage your API key, monitor usage, and upgrade your plan.</p>
+
+        <div class="dashboard-section">
+          <h2>Subscription</h2>
+          <div class="stat-row">
+            <span class="stat-label">Current tier</span>
+            <span id="tier-badge" class="tier-label tier-free">Free</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Rate limit</span>
+            <span id="rate-limit" class="stat-value">2 req/sec</span>
+          </div>
+        </div>
+
+        <div class="dashboard-section">
+          <h2>Usage</h2>
+          <div class="stat-row">
+            <span class="stat-label">Requests used</span>
+            <span id="usage-count" class="stat-value">0 / 500</span>
+          </div>
+          <div class="progress-track">
+            <div id="usage-bar" class="progress-fill" style="width: 0%"></div>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Remaining</span>
+            <span id="usage-remaining" class="stat-value">500</span>
+          </div>
+        </div>
+
+        <div class="dashboard-section">
+          <h2>API Key</h2>
+          <p>Use this key in the <code>Authorization: Bearer</code> header. See the <a href="/tools/api">REST API reference</a> for details.</p>
+          <div class="key-box">
+            <span id="api-key-display">sg_live_************************</span>
+            <button class="btn btn-secondary" style="font-size:0.6875rem;padding:0.25rem 0.5rem" onclick="copyApiKey()">Copy</button>
+          </div>
+          <div class="actions">
+            <button class="btn btn-danger" onclick="regenerateKey()">Regenerate Key</button>
+          </div>
+          <div id="key-message" class="hidden"></div>
+        </div>
+
+        <div class="dashboard-section">
+          <h2>Billing</h2>
+          <p>Upgrade your plan to increase your monthly extraction limit and rate limit. All plans include full pipeline access, UCP output, and AgentReady scoring.</p>
+          <div class="actions">
+            <button class="btn btn-primary" onclick="upgradeTo('starter')">Starter ($99/mo)</button>
+            <button class="btn btn-primary" onclick="upgradeTo('growth')">Growth ($299/mo)</button>
+            <button id="portal-btn" class="btn btn-secondary hidden" onclick="openPortal()">Manage Billing</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<script>
+  let currentKey = null;
+
+  (function init() {
+    const params = new URLSearchParams(window.location.search);
+    const keyParam = params.get('key');
+    const storedKey = localStorage.getItem('sg_api_key');
+
+    if (keyParam) {
+      currentKey = keyParam;
+      localStorage.setItem('sg_api_key', keyParam);
+      window.history.replaceState({}, '', '/dashboard');
+      loadDashboard();
+    } else if (storedKey) {
+      currentKey = storedKey;
+      loadDashboard();
+    }
+  })();
+
+  function loginWithKey() {
+    const input = document.getElementById('api-key-input');
+    const key = input.value.trim();
+    if (!key.startsWith('sg_live_')) {
+      showError('login-error', 'API key must start with sg_live_');
+      return;
+    }
+    currentKey = key;
+    localStorage.setItem('sg_api_key', key);
+    loadDashboard();
+  }
+
+  async function loadDashboard() {
+    try {
+      const resp = await fetch('/api/dashboard/usage', {
+        headers: { 'Authorization': 'Bearer ' + currentKey },
+      });
+
+      if (!resp.ok) {
+        if (resp.status === 401) {
+          showError('login-error', 'Invalid API key');
+          currentKey = null;
+          localStorage.removeItem('sg_api_key');
+          return;
+        }
+        throw new Error('Failed to load dashboard');
+      }
+
+      const data = await resp.json();
+      renderDashboard(data);
+    } catch (err) {
+      showError('login-error', err.message || 'Failed to load dashboard');
+    }
+  }
+
+  function renderDashboard(data) {
+    document.getElementById('login-view').classList.add('hidden');
+    document.getElementById('dashboard-view').classList.remove('hidden');
+
+    var badge = document.getElementById('tier-badge');
+    badge.textContent = data.tierName;
+    badge.className = 'tier-label tier-' + data.tier;
+
+    document.getElementById('rate-limit').textContent = data.rateLimit + ' req/sec';
+
+    var limit = data.limit === null || !isFinite(data.limit) ? 'Unlimited' : data.limit.toLocaleString();
+    document.getElementById('usage-count').textContent = data.usage.toLocaleString() + ' / ' + limit;
+    document.getElementById('usage-remaining').textContent = isFinite(data.remaining) ? data.remaining.toLocaleString() : 'Unlimited';
+
+    var pct = isFinite(data.limit) ? Math.min(100, (data.usage / data.limit) * 100) : 0;
+    var bar = document.getElementById('usage-bar');
+    bar.style.width = pct + '%';
+    bar.className = 'progress-fill' + (pct > 90 ? ' danger' : pct > 70 ? ' warning' : '');
+
+    document.getElementById('api-key-display').textContent = data.apiKeyMasked;
+
+    if (data.stripeCustomerId) {
+      document.getElementById('portal-btn').classList.remove('hidden');
+    }
+  }
+
+  async function copyApiKey() {
+    if (currentKey) {
+      await navigator.clipboard.writeText(currentKey);
+      var el = document.getElementById('key-message');
+      el.className = 'msg-success';
+      el.textContent = 'Copied to clipboard.';
+      el.classList.remove('hidden');
+      setTimeout(function() { el.classList.add('hidden'); }, 2000);
+    }
+  }
+
+  async function regenerateKey() {
+    if (!confirm('This will invalidate your current API key. Continue?')) return;
+
+    try {
+      var resp = await fetch('/api/auth/api-key/regenerate', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + currentKey,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      var data = await resp.json();
+      if (!resp.ok) throw new Error(data.error);
+
+      currentKey = data.apiKey;
+      localStorage.setItem('sg_api_key', data.apiKey);
+
+      var msg = document.getElementById('key-message');
+      msg.className = 'msg-success';
+      msg.textContent = 'New API key generated and saved to this session.';
+      msg.classList.remove('hidden');
+
+      loadDashboard();
+    } catch (err) {
+      var msg = document.getElementById('key-message');
+      msg.className = 'msg-error';
+      msg.textContent = err.message || 'Failed to regenerate key';
+      msg.classList.remove('hidden');
+    }
+  }
+
+  async function upgradeTo(tier) {
+    try {
+      var resp = await fetch('/api/billing/checkout', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + currentKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ tier: tier }),
+      });
+
+      var data = await resp.json();
+      if (!resp.ok) throw new Error(data.error);
+
+      window.location.href = data.url;
+    } catch (err) {
+      alert(err.message || 'Failed to create checkout session');
+    }
+  }
+
+  async function openPortal() {
+    try {
+      var resp = await fetch('/api/billing/portal', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + currentKey,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      var data = await resp.json();
+      if (!resp.ok) throw new Error(data.error);
+
+      window.location.href = data.url;
+    } catch (err) {
+      alert(err.message || 'Failed to open billing portal');
+    }
+  }
+
+  function showError(id, msg) {
+    var el = document.getElementById(id);
+    el.textContent = msg;
+    el.classList.remove('hidden');
+  }
+</script>
+</body>
+</html>

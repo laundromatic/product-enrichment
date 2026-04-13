@@ -1,0 +1,22 @@
+[
+  {
+    "name": "html",
+    "type": "text",
+    "label": "HTML Content",
+    "required": true,
+    "multiline": true,
+    "help": "The raw HTML content of the product page to extract data from."
+  },
+  {
+    "name": "format",
+    "type": "select",
+    "label": "Output Format",
+    "required": false,
+    "default": "shopgraph",
+    "options": [
+      { "label": "ShopGraph", "value": "shopgraph" },
+      { "label": "UCP (Universal Commerce Protocol)", "value": "ucp" }
+    ],
+    "help": "Response format. ShopGraph is the default; UCP follows the Universal Commerce Protocol schema."
+  }
+]
