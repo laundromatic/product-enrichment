@@ -111,6 +111,11 @@
         if (target) {
           target.scrollIntoView({ behavior: 'smooth', block: 'start' });
           history.replaceState(null, '', '#' + h2.id);
+          // Immediately update active state
+          subUl.querySelectorAll('.nav-subitem a').forEach(function (link) {
+            link.classList.remove('active');
+          });
+          this.classList.add('active');
         }
       });
       subLi.appendChild(subA);
@@ -139,6 +144,16 @@
     h2s.forEach(function (h2) {
       observer.observe(h2);
     });
+
+    // Highlight on initial load if URL has a hash
+    var hash = window.location.hash;
+    if (hash) {
+      subLinks.forEach(function (link) {
+        if (link.getAttribute('href') === hash) {
+          link.classList.add('active');
+        }
+      });
+    }
   }
 
   function buildSidebar() {
