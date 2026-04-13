@@ -421,10 +421,10 @@
 
 /* === EXTRACTION PIPELINE DIAGRAM === */
 .pipeline-diagram {
-  width: 780px;
-  max-width: calc(100vw - 2rem);
+  width: 100%;
   margin: 1rem 0 1.5rem;
   font-family: var(--font-sans);
+  overflow: hidden;
 }
 
 .pipeline-diagram * { box-sizing: border-box; }
@@ -448,8 +448,8 @@
   margin-top: 0;
 }
 
-.pd-left { flex: 0 0 68%; }
-.pd-right { flex: 0 0 30%; display: flex; flex-direction: column; }
+.pd-left { flex: 0 0 60%; min-width: 0; }
+.pd-right { flex: 0 0 38%; display: flex; flex-direction: column; min-width: 0; }
 
 /* Vertical arrow connector */
 .pd-arrow-down {
