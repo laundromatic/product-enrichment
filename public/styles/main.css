@@ -80,18 +80,30 @@ a:hover { color: var(--link-hover); text-decoration: underline; }
   margin-bottom: 0;
 }
 
+.sidebar-logo {
+  display: block;
+  font-family: 'Phosphate', Impact, sans-serif;
+  font-size: 25px;
+  text-decoration: none;
+  margin-bottom: 0.5rem;
+  line-height: 1;
+}
+
+.sidebar-logo:hover { text-decoration: none; }
+
 .nav-section-title {
   padding: 0;
-  margin-top: 0.75rem;
+  margin-top: 1rem;
   margin-bottom: 0.125rem;
   font-family: var(--font-sans);
-  font-size: 0.625rem;
-  font-variation-settings: "wght" 500;
-  color: rgba(0, 0, 0, 0.2);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #222;
   user-select: none;
   cursor: default;
-  line-height: normal;
-  letter-spacing: 0.02em;
+  line-height: 28px;
 }
 
 .nav-items { list-style: none; padding: 0; margin: 0; }
@@ -121,26 +133,26 @@ a:hover { color: var(--link-hover); text-decoration: underline; }
 
 .nav-subitem a {
   display: block;
-  font-size: 0.6875rem;
-  font-variation-settings: "wght" 400;
-  line-height: 1.6;
-  color: rgba(0, 0, 0, 0.3);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.8;
+  color: rgba(0, 0, 0, 0.45);
   text-decoration: none;
-  padding: 0.0625rem 0;
-  transition: color 0.15s ease, font-variation-settings 0.15s ease;
+  padding: 0;
+  transition: color 0.15s ease;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .nav-subitem a:hover {
-  color: rgba(0, 0, 0, 0.55);
+  color: #0969da;
   text-decoration: none;
 }
 
 .nav-subitem a.active {
-  color: rgba(0, 0, 0, 0.8);
-  font-variation-settings: "wght" 550;
+  color: #222;
+  font-weight: 600;
 }
 
 .nav-subitem a.active::before {
@@ -158,24 +170,23 @@ a:hover { color: var(--link-hover); text-decoration: underline; }
   display: block;
   padding: 0;
   font-family: var(--font-sans);
-  font-size: 0.75rem;
-  font-variation-settings: "wght" 450;
-  line-height: 1.5;
-  color: rgba(0, 0, 0, 0.35);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 30px;
+  color: #222;
   text-decoration: none;
-  transition: color 0.15s ease, font-variation-settings 0.25s ease;
+  transition: color 0.15s ease;
 }
 
 .nav-item a:hover {
-  color: rgba(0, 0, 0, 0.55);
-  font-variation-settings: "wght" 550;
+  color: #0969da;
   background: transparent;
   text-decoration: none;
 }
 
 .nav-item a.active {
-  color: rgba(0, 0, 0, 0.8);
-  font-variation-settings: "wght" 550;
+  color: #0969da;
+  font-weight: 600;
   background: transparent;
 }
 

@@ -34,9 +34,10 @@
       items: [
         { label: 'Changelog', href: '/changelog' },
         { label: 'Methodology', href: '/methodology' },
-        { label: 'Pricing', href: '/pricing' },
         { label: 'Blog', href: '/blog' },
         { label: 'FAQ', href: '/faq' },
+        { label: 'Health Check', href: '/api/health-check' },
+        { label: 'Pricing', href: '/pricing' },
       ],
     },
   ];
@@ -157,6 +158,13 @@
     // Create sidebar
     const sidebar = document.createElement('nav');
     sidebar.className = 'sidebar';
+
+    // Logo
+    const logo = document.createElement('a');
+    logo.href = '/';
+    logo.className = 'sidebar-logo';
+    logo.innerHTML = '<span style="color:#007aff">Shop</span><span style="color:#f7c54b">Graph</span>';
+    sidebar.appendChild(logo);
 
     const nav = document.createElement('div');
     nav.className = 'sidebar-nav';
