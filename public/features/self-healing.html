@@ -413,6 +413,354 @@
   transform: translateY(0);
 }
 
+/* === EXTRACTION PIPELINE DIAGRAM === */
+.pipeline-diagram {
+  width: 780px;
+  max-width: calc(100vw - 2rem);
+  margin: 1rem 0 1.5rem;
+  font-family: var(--font-sans);
+}
+
+.pipeline-diagram * { box-sizing: border-box; }
+
+.pd-input-box {
+  background: #f4f4f6;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 0.5rem;
+  padding: 0.625rem 1rem;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--body-color);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.pd-columns {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0;
+}
+
+.pd-left { flex: 0 0 68%; }
+.pd-right { flex: 0 0 30%; display: flex; flex-direction: column; }
+
+/* Vertical arrow connector */
+.pd-arrow-down {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.375rem 0;
+  position: relative;
+}
+
+.pd-arrow-down .pd-arrow-line {
+  width: 2px;
+  height: 20px;
+  background: #d1d5db;
+}
+
+.pd-arrow-down .pd-arrow-head {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid #d1d5db;
+}
+
+.pd-arrow-down .pd-arrow-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  margin-top: 2px;
+  text-align: center;
+}
+
+.pd-arrow-label.fail { color: #dc2626; }
+.pd-arrow-label.success { color: #16a34a; }
+
+/* Success arrow pointing right */
+.pd-success-arrow {
+  position: absolute;
+  right: -1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.pd-success-arrow .pd-sarrow-line {
+  width: 20px;
+  height: 2px;
+  background: #16a34a;
+}
+
+.pd-success-arrow .pd-sarrow-head {
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 6px solid #16a34a;
+}
+
+.pd-success-arrow .pd-sarrow-label {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  color: #16a34a;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Tier box */
+.pd-tier {
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 0.5rem;
+  background: #fff;
+  overflow: hidden;
+  position: relative;
+}
+
+.pd-tier-header {
+  background: rgba(0,0,0,0.85);
+  color: #fff;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.pd-tier-body {
+  padding: 0.625rem 0.75rem;
+}
+
+.pd-tier-desc {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+}
+
+.pd-tier-stats {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.pd-stat {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+.pd-stat strong {
+  color: var(--body-color);
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+/* Confidence panel */
+.pd-confidence {
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 0.5rem;
+  background: #fff;
+  overflow: hidden;
+  flex: 1;
+}
+
+.pd-conf-header {
+  background: #92400e;
+  color: #fff;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.pd-conf-body {
+  padding: 0.625rem 0.75rem;
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+  line-height: 1.8;
+}
+
+.pd-conf-body .pd-conf-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pd-conf-body .pd-conf-field {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--body-color);
+}
+
+.pd-conf-body .pd-conf-val {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--body-color);
+}
+
+.pd-conf-divider {
+  border: none;
+  border-top: 1px solid rgba(0,0,0,0.06);
+  margin: 0.5rem 0;
+}
+
+.pd-conf-meta {
+  font-size: 0.625rem;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+
+.pd-conf-meta code {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: var(--body-color);
+}
+
+.pd-agent-score {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--body-color);
+}
+
+/* JSON response box */
+.pd-json-box {
+  background: rgba(0,0,0,0.85);
+  color: #fff;
+  border-radius: 0.5rem;
+  padding: 0.625rem 1rem;
+  text-align: center;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  letter-spacing: 0.03em;
+  margin-top: 0.5rem;
+}
+
+/* CAPTCHA failure box */
+.pd-captcha {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.625rem;
+  color: #dc2626;
+  font-weight: 600;
+  text-align: center;
+  margin-top: 0.25rem;
+}
+
+/* Agent routing section */
+.pd-agent-section {
+  margin-top: 1.25rem;
+  border-top: 2px dashed rgba(0,0,0,0.08);
+  padding-top: 1rem;
+}
+
+.pd-agent-label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.375rem;
+}
+
+.pd-agent-title {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--body-color);
+  margin-bottom: 0.75rem;
+}
+
+.pd-routing-outcomes {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.pd-outcome {
+  flex: 1;
+  min-width: 140px;
+  border-radius: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  text-align: center;
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.pd-outcome-green {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #16a34a;
+}
+
+.pd-outcome-amber {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #d97706;
+}
+
+.pd-outcome-red {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+.pd-outcome .pd-outcome-label {
+  display: block;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.pd-outcome .pd-outcome-range {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+}
+
+/* Pipeline animation states */
+@keyframes tierPulse {
+  0% { border-color: rgba(0,0,0,0.08); box-shadow: rgba(0,0,0,0.04) 0px 1px 3px; }
+  25% { border-color: rgba(96,165,250,0.376); box-shadow: rgba(96,165,250,0.145) 0px 0px 12px 4px, rgba(96,165,250,0.125) 0px 0px 4px 1px; }
+  60% { border-color: rgba(96,165,250,0.376); box-shadow: rgba(96,165,250,0.145) 0px 0px 12px 4px, rgba(96,165,250,0.125) 0px 0px 4px 1px; }
+  100% { border-color: rgba(0,0,0,0.08); box-shadow: rgba(0,0,0,0.04) 0px 1px 3px; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pd-anim-hidden {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.pd-anim-visible {
+  animation: fadeInUp 0.4s ease forwards;
+}
+
+.pd-tier.pd-tier-pulsed {
+  animation: tierPulse 1.2s ease forwards;
+}
+
+/* Responsive: stack on mobile */
+@media (max-width: 768px) {
+  .pd-columns { flex-direction: column; }
+  .pd-left, .pd-right { flex: 1 1 100%; }
+  .pd-success-arrow { display: none; }
+  .pd-routing-outcomes { flex-direction: column; }
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .routing-dashboard { padding: 16px; }
@@ -443,10 +791,143 @@
       </blockquote>
 
       <h2 class="fade-in-section">Extraction Pipeline Overview</h2>
-      <div class="fade-in-section" style="width:780px;max-width:calc(100vw - 2rem);margin:1rem 0 1.5rem;transition-delay:0.1s">
-        <img src="/images/extraction-pipeline.svg" alt="ShopGraph extraction pipeline — three-tier waterfall with per-field confidence scoring" style="width:100%;height:auto">
+
+      <div class="pipeline-diagram" id="pipeline-diagram">
+        <!-- Product URL input -->
+        <div class="pd-input-box pd-anim-hidden" data-pd-delay="0">Product URL</div>
+
+        <div class="pd-arrow-down pd-anim-hidden" data-pd-delay="100">
+          <div class="pd-arrow-line"></div>
+          <div class="pd-arrow-head"></div>
+        </div>
+
+        <div class="pd-columns">
+          <!-- LEFT: Tier stack -->
+          <div class="pd-left">
+            <!-- Tier 1 -->
+            <div class="pd-tier pd-anim-hidden" data-pd-delay="200" id="pd-tier1">
+              <div class="pd-tier-header">Tier 1: Schema.org Extraction</div>
+              <div class="pd-tier-body">
+                <div class="pd-tier-desc">Parses JSON-LD and microdata from the raw HTML response. No rendering or LLM needed.</div>
+                <div class="pd-tier-stats">
+                  <div class="pd-stat">Latency: <strong>&lt; 1s</strong></div>
+                  <div class="pd-stat">Cost: <strong>$0.000</strong></div>
+                  <div class="pd-stat">Confidence: <strong>0.90 - 0.98</strong></div>
+                </div>
+              </div>
+              <div class="pd-success-arrow pd-anim-hidden" data-pd-delay="400">
+                <span class="pd-sarrow-label">Success</span>
+                <span class="pd-sarrow-line"></span>
+                <span class="pd-sarrow-head"></span>
+              </div>
+            </div>
+
+            <!-- Failure arrow 1 -->
+            <div class="pd-arrow-down pd-anim-hidden" data-pd-delay="500">
+              <div class="pd-arrow-line"></div>
+              <div class="pd-arrow-label fail">MISSING / MALFORMED</div>
+              <div class="pd-arrow-head"></div>
+            </div>
+
+            <!-- Tier 2 -->
+            <div class="pd-tier pd-anim-hidden" data-pd-delay="600" id="pd-tier2">
+              <div class="pd-tier-header">Tier 2: LLM Extraction</div>
+              <div class="pd-tier-body">
+                <div class="pd-tier-desc">Passes raw DOM to the LLM for structured extraction via the Universal Commerce Protocol.</div>
+                <div class="pd-tier-stats">
+                  <div class="pd-stat">Latency: <strong>~3s</strong></div>
+                  <div class="pd-stat">Cost: <strong>$0.001</strong></div>
+                  <div class="pd-stat">Confidence: <strong>0.75 - 0.88</strong></div>
+                </div>
+              </div>
+              <div class="pd-success-arrow pd-anim-hidden" data-pd-delay="800">
+                <span class="pd-sarrow-label">Success</span>
+                <span class="pd-sarrow-line"></span>
+                <span class="pd-sarrow-head"></span>
+              </div>
+            </div>
+
+            <!-- Failure arrow 2 -->
+            <div class="pd-arrow-down pd-anim-hidden" data-pd-delay="900">
+              <div class="pd-arrow-line"></div>
+              <div class="pd-arrow-label fail">403 / JS-RENDERED</div>
+              <div class="pd-arrow-head"></div>
+            </div>
+
+            <!-- Tier 3 -->
+            <div class="pd-tier pd-anim-hidden" data-pd-delay="1000" id="pd-tier3">
+              <div class="pd-tier-header">Tier 3: Playwright Rendering + LLM</div>
+              <div class="pd-tier-body">
+                <div class="pd-tier-desc">Launches headless Chrome to solve bot protection, then passes rendered DOM to the LLM.</div>
+                <div class="pd-tier-stats">
+                  <div class="pd-stat">Latency: <strong>5 - 10s</strong></div>
+                  <div class="pd-stat">Cost: <strong>$0.005</strong></div>
+                  <div class="pd-stat">Confidence: <strong>0.68 - 0.80</strong></div>
+                </div>
+              </div>
+              <div class="pd-success-arrow pd-anim-hidden" data-pd-delay="1200">
+                <span class="pd-sarrow-label">Success</span>
+                <span class="pd-sarrow-line"></span>
+                <span class="pd-sarrow-head"></span>
+              </div>
+            </div>
+
+            <!-- CAPTCHA failure -->
+            <div class="pd-captcha pd-anim-hidden" data-pd-delay="1100">Unsolvable CAPTCHA: returns 403 + captcha_required</div>
+          </div>
+
+          <!-- RIGHT: Confidence panel -->
+          <div class="pd-right">
+            <div class="pd-confidence pd-anim-hidden" data-pd-delay="400">
+              <div class="pd-conf-header">Confidence</div>
+              <div class="pd-conf-body">
+                <div class="pd-conf-row"><span class="pd-conf-field">product_name</span><span class="pd-conf-val">0.98</span></div>
+                <div class="pd-conf-row"><span class="pd-conf-field">price</span><span class="pd-conf-val">0.93</span></div>
+                <div class="pd-conf-row"><span class="pd-conf-field">brand</span><span class="pd-conf-val">0.94</span></div>
+                <div class="pd-conf-row"><span class="pd-conf-field">availability</span><span class="pd-conf-val">0.83</span></div>
+
+                <hr class="pd-conf-divider">
+
+                <div class="pd-conf-meta">
+                  <code>extraction_method</code>: schema_org<br>
+                  <code>confidence_method</code>: tier_baseline<br>
+                  <code>latency_ms</code>: 340
+                </div>
+
+                <hr class="pd-conf-divider">
+
+                <div class="pd-agent-score">
+                  AgentReady Score<br>
+                  <span style="font-weight:400;font-size:0.625rem;color:var(--text-muted)">6 dimensions, 5 active, 1 stub</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- JSON Response -->
+            <div class="pd-json-box pd-anim-hidden" data-pd-delay="1400">JSON Response</div>
+          </div>
+        </div>
+
+        <!-- Agent routing section -->
+        <div class="pd-agent-section pd-anim-hidden" data-pd-delay="1600">
+          <div class="pd-agent-label">Your Agent Decides</div>
+          <div class="pd-agent-title">Per-Field Confidence Routing</div>
+          <div class="pd-routing-outcomes">
+            <div class="pd-outcome pd-outcome-green">
+              <span class="pd-outcome-label">Autonomous</span>
+              <span class="pd-outcome-range">&gt;= 0.85</span>
+            </div>
+            <div class="pd-outcome pd-outcome-amber">
+              <span class="pd-outcome-label">Human Review</span>
+              <span class="pd-outcome-range">0.60 - 0.84</span>
+            </div>
+            <div class="pd-outcome pd-outcome-red">
+              <span class="pd-outcome-label">Escalate / Manual</span>
+              <span class="pd-outcome-range">&lt; 0.60</span>
+            </div>
+          </div>
+        </div>
       </div>
-      <p class="fade-in-section" style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.75rem;transition-delay:0.15s">The pipeline runs top-to-bottom. Each tier only fires if the previous tier fails. Success at any tier exits right to confidence scoring.</p>
 
       <!-- HERO: Interactive Routing Engine Dashboard -->
       <div class="routing-dashboard fade-in-section" id="routing-dashboard" style="transition-delay:0.2s">
@@ -919,6 +1400,43 @@ console.log(result._shopgraph.extraction_method);
   }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
 
   sections.forEach(function(s) { observer.observe(s); });
+})();
+</script>
+<script>
+// Pipeline diagram scroll-triggered animations
+(function() {
+  var diagram = document.getElementById('pipeline-diagram');
+  if (!diagram) return;
+
+  var animated = false;
+  var elements = diagram.querySelectorAll('.pd-anim-hidden');
+  var tiers = diagram.querySelectorAll('.pd-tier');
+
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting && !animated) {
+        animated = true;
+        observer.unobserve(entry.target);
+
+        elements.forEach(function(el) {
+          var delay = parseInt(el.getAttribute('data-pd-delay') || '0', 10);
+          setTimeout(function() {
+            el.classList.remove('pd-anim-hidden');
+            el.classList.add('pd-anim-visible');
+          }, delay);
+        });
+
+        tiers.forEach(function(tier) {
+          var delay = parseInt(tier.getAttribute('data-pd-delay') || '0', 10);
+          setTimeout(function() {
+            tier.classList.add('pd-tier-pulsed');
+          }, delay);
+        });
+      }
+    });
+  }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+  observer.observe(diagram);
 })();
 </script>
 </body>
