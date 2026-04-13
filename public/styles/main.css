@@ -59,7 +59,7 @@ a:hover { color: var(--link-hover); text-decoration: underline; }
   position: fixed;
   top: 3.75rem;
   bottom: 1.5rem;
-  left: calc(50% - 18rem - 11rem);
+  left: calc(50% - 18rem - 8.5rem);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -562,12 +562,12 @@ tr:hover td { background: var(--card-bg); }
 
 /* === PLAYGROUND === */
 .playground {
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
+  background: transparent;
+  border: 1px dashed #007AFF;
   border-radius: var(--radius-lg);
   padding: 1.25rem;
   margin: 1rem 0;
-  width: 780px;
+  width: 894px;
   max-width: calc(100vw - 2rem);
 }
 
