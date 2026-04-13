@@ -27,7 +27,7 @@
         <tbody>
           <tr><td><strong>API Key</strong></td><td><code>Authorization: Bearer sg_live_...</code></td><td>For Starter, Growth, and Enterprise tiers</td></tr>
           <tr><td><strong>Stripe MPP</strong></td><td><code>X-Payment-Method: pm_...</code></td><td>Machine-to-machine payments for agents</td></tr>
-          <tr><td><strong>Free tier</strong></td><td>None</td><td>500 calls/month, no signup needed</td></tr>
+          <tr><td><strong>Free tier</strong></td><td>None</td><td>50 full-pipeline calls/month, no signup needed</td></tr>
         </tbody>
       </table>
 
@@ -35,7 +35,7 @@
       <table>
         <thead><tr><th>Tier</th><th>Monthly Limit</th><th>Rate</th></tr></thead>
         <tbody>
-          <tr><td>Free</td><td>500</td><td>10/min</td></tr>
+          <tr><td>Free</td><td>50</td><td>10/min</td></tr>
           <tr><td>Starter ($99)</td><td>10,000</td><td>60/min</td></tr>
           <tr><td>Growth ($299)</td><td>50,000</td><td>200/min</td></tr>
           <tr><td>Enterprise</td><td>Custom</td><td>Custom</td></tr>
@@ -48,6 +48,9 @@
       <!-- POST /api/enrich/basic -->
       <h3><span class="badge badge-green">POST</span> <code>/api/enrich/basic</code></h3>
       <p>Free-tier extraction using Schema.org structured data only. No authentication required.</p>
+      <div class="alert alert-info">
+        <strong>Note:</strong> For most URLs, the <a href="https://shopgraph.dev">Playground</a> or the full <code>/api/enrich</code> endpoint provides better results.
+      </div>
 
       <h4>Request</h4>
       <div class="code-header"><span>curl</span><button class="copy-btn">Copy</button></div>
@@ -88,7 +91,7 @@
     }
   },
   "cached": false,
-  "free_tier": { "used": 12, "limit": 500 }
+  "free_tier": { "used": 12, "limit": 50 }
 }</code></pre>
 
       <hr>

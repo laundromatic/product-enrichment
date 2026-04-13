@@ -66,7 +66,7 @@ console.log(result._shopgraph.confidence_score);
 
       <h2>API Key Setup</h2>
       <ol style="margin:16px 0;padding-left:24px;line-height:2">
-        <li><strong>Free tier</strong> — 500 calls/month, no signup required. Just call the API.</li>
+        <li><strong>Free tier</strong> — 50 full-pipeline calls/month, no signup required. Just call the API.</li>
         <li><strong>Authenticated tier</strong> — Sign up at the <a href="/pricing">pricing page</a> to get an API key (<code>sg_live_...</code>).</li>
         <li>Pass the key via the <code>Authorization</code> header:</li>
       </ol>
@@ -107,6 +107,10 @@ console.log(result._shopgraph.confidence_score);
     }
   }
 }</code></pre>
+
+      <div class="alert alert-info">
+        <strong>Tip:</strong> The <a href="https://shopgraph.dev">Playground</a> at shopgraph.dev uses the full three-tier extraction pipeline (Schema.org + LLM + browser rendering) and is the best way to explore ShopGraph's capabilities.
+      </div>
 
       <div class="alert alert-info">
         <strong>Next steps:</strong> Read about <a href="/features/confidence">confidence scoring</a> to understand field-level quality, or see the full <a href="/tools/api">REST API reference</a>.
