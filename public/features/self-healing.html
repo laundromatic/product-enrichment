@@ -453,19 +453,19 @@
       <h2 class="fade-in-section">Extraction Pipeline Overview</h2>
 
       <div class="dg-diagram" id="pipeline-diagram">
-      <svg viewBox="0 0 576 556" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg">
+      <svg viewBox="0 0 576 556" width="100%" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
             text { font-family: 'Inter', sans-serif; }
           </style>
-          <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-auto">
+          <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto">
             <path d="M 0 0 L 10 5 L 0 10 z" fill="#9ca3af"/>
           </marker>
-          <marker id="arrow-green" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-auto">
+          <marker id="arrow-green" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto">
             <path d="M 0 0 L 10 5 L 0 10 z" fill="#16a34a"/>
           </marker>
-          <marker id="arrow-red" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-auto">
+          <marker id="arrow-red" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto">
             <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444"/>
           </marker>
           <filter id="shadow" x="-4%" y="-4%" width="108%" height="112%">
@@ -493,7 +493,7 @@
 
         <!-- Success arrow: Tier 1 to Confidence -->
         <g class="dg-hidden" data-dg-delay="200">
-          <line x1="340" y1="91" x2="370" y2="91" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+          <line x1="340" y1="91" x2="370" y2="91" stroke="#16a34a" stroke-width="1.5" marker-end="url(#pl-arrow-green)"/>
           <text x="345" y="85" font-size="8" font-weight="700" fill="#16a34a">SUCCESS</text>
         </g>
 
@@ -514,7 +514,7 @@
 
         <!-- Success arrow: Tier 2 to Confidence -->
         <g class="dg-hidden" data-dg-delay="600">
-          <line x1="340" y1="185" x2="370" y2="185" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+          <line x1="340" y1="185" x2="370" y2="185" stroke="#16a34a" stroke-width="1.5" marker-end="url(#pl-arrow-green)"/>
           <text x="345" y="179" font-size="8" font-weight="700" fill="#16a34a">SUCCESS</text>
         </g>
 
@@ -535,7 +535,7 @@
 
         <!-- Success arrow: Tier 3 to Confidence -->
         <g class="dg-hidden" data-dg-delay="1000">
-          <line x1="340" y1="279" x2="370" y2="279" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+          <line x1="340" y1="279" x2="370" y2="279" stroke="#16a34a" stroke-width="1.5" marker-end="url(#pl-arrow-green)"/>
           <text x="345" y="273" font-size="8" font-weight="700" fill="#16a34a">SUCCESS</text>
         </g>
 
