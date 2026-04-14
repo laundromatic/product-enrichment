@@ -315,6 +315,7 @@ async function extractFromHtmlContent(html: string, url: string, options?: Enric
 
   // Try schema.org first (fast, high confidence)
   const schemaResult = extractSchemaOrg(html);
+  console.log(`[extract] Schema.org for ${url}: product_name=${schemaResult?.product_name ?? 'null'}, html_length=${html.length}`);
   if (schemaResult && schemaResult.product_name) {
     const schemaProduct: ProductData = {
       url,
@@ -353,7 +354,14 @@ async function extractFromHtmlContent(html: string, url: string, options?: Enric
   }
 
   // Fall back to LLM extraction
-  const llmResult = await extractWithLlm(html, url);
+  console.log(`[extract] Schema.org empty for ${url}, attempting LLM fallback`);
+  let llmResult;
+  try {
+    llmResult = await extractWithLlm(html, url);
+    console.log(`[extract] LLM result for ${url}: product_name=${llmResult?.product_name ?? 'null'}`);
+  } catch (llmErr) {
+    console.error(`[extract] LLM fallback failed for ${url}:`, llmErr instanceof Error ? llmErr.message : llmErr);
+  }
   if (llmResult && llmResult.product_name) {
     return applyThresholdAndMetadata({
       url,
