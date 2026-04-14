@@ -7,8 +7,13 @@ The free tier's only job is to eliminate the buyer's objection "does this work o
 
 Current state: Playground now uses `/api/playground` (full pipeline, 100/day IP throttle for testing). Free tier changed from 500 Schema.org-only to 50 full-pipeline calls/month.
 
-### B2B Extraction Currently Broken (LAU-305)
-Grainger, Zoro, Uline, Fastenal, Home Depot all fail extraction from Vercel serverless IPs. Only Shopify/DTC stores (Allbirds, Esenshel, Material Kitchen, Keychron) work reliably. The B2B thesis (blog posts, leaderboard scores, API reference) references sites the system cannot currently extract from. This is a critical infrastructure gap requiring either browser fallback enablement or residential proxy infrastructure. Do NOT claim B2B extraction works in demos until LAU-305 is resolved.
+### B2B Extraction — Verified Working Sites
+8 sites verified live on leaderboard: moglix.com, haastooling.com, amleo.com, allbirds.com, discountcomputerdepot.com, uline.com, cpooutlets.com, maritool.com. These work today.
+
+Sites like Grainger, Home Depot, Amazon, McMaster-Carr block serverless IPs. These have been REMOVED from the leaderboard. Do NOT add sites to the leaderboard unless extraction is verified via /api/playground. Do NOT claim RFC 9421 or Cloudflare registration will fix blocked sites — we have no evidence.
+
+LAU-307: Apply to Cloudflare Signed Agents directory (high priority, unverified outcome)
+LAU-308: Find and verify more B2B sites across verticals
 
 ### Banned Terms
 Never use in any customer-facing copy: deterministic, guaranteed, scraping/scraper, bypass/circumvent, unblock, fighting, toll roads (commerce context), identity broker, OV identity, trust score, "the first" (unqualified)
