@@ -63,7 +63,7 @@ a:hover { color: var(--link-hover); text-decoration: underline; }
   width: 260px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.5em;
   padding: 0 24px 20px 24px;
   overflow-y: auto;
   scrollbar-width: none;
@@ -99,7 +99,7 @@ a:hover { color: var(--link-hover); text-decoration: underline; }
 .nav-section-title {
   padding: 0;
   margin-top: 12px;
-  margin-bottom: 0;
+  margin-bottom: 5px;
   font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 700;
