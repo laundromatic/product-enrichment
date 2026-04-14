@@ -419,9 +419,7 @@
       summary += 'Pricing clarity (' + row.pricing + '): whether price, currency, and availability are machine-readable. ';
       summary += 'Inventory signals (' + row.inventory + '): stock status, lead time, and fulfillment indicators.';
     } else {
-      summary += 'This site currently restricts automated access from datacenter IPs. ';
-      summary += 'Full extraction requires authenticated identity (RFC 9421 Signed Agent registration with Cloudflare), which is on the ShopGraph roadmap. ';
-      if (row.score >= 80) summary += 'The high readiness score means the site has quality product data — access is the only barrier to extraction.';
+      summary += 'This site currently restricts automated access. ShopGraph cannot extract from this site today.';
     }
 
     return summary;
