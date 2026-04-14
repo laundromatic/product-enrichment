@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="How ready are major commerce sites for authenticated AI agents? Live AgentReady scores across 25+ retailers, updated daily. See how Grainger, Amazon, Target, and more perform across 6 dimensions of agent readiness.">
+<meta name="description" content="How ready are commerce sites for authenticated AI agents? Live AgentReady scores across B2B and B2C retailers, updated daily. See extraction status and agent-readiness scores across 6 dimensions.">
 <title>AgentReady Leaderboard — ShopGraph</title>
 <link rel="icon" type="image/png" href="/icon.png">
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
@@ -264,7 +264,8 @@
     <div class="content-inner">
 
       <h1>AgentReady Leaderboard</h1>
-      <p class="subtitle">How ready are major commerce sites for authenticated AI agents?</p>
+      <p class="subtitle">How ready are commerce sites for authenticated AI agents?</p>
+      <p id="sites-checked" style="font-size:0.8125rem;color:var(--text-secondary);margin:0.25rem 0 0.5rem"><span id="sites-count"></span> commerce domains analyzed. <a href="/methodology.html" style="color:var(--link-color);font-weight:500">How scoring works &rarr;</a></p>
       <p class="last-updated" id="last-updated"></p>
 
       <div id="leaderboard-loading" class="leaderboard-loading">
@@ -313,7 +314,18 @@
     { domain: "discountcomputerdepot.com", url: "https://discountcomputerdepot.com/todays-top-deals-save-big/hp-prodesk-600-g6-small-form-factor-sff-intel-core-i5-10th-gen-16gb-ram-1tb-ssd-windows-11-pro-wi-fi/", score: 84, completeness: 89, semantic: 85, ucp: 81, pricing: 83, inventory: 86, scored_at: "2026-04-13T06:00:00Z", status: "live" },
     { domain: "uline.com", url: "https://www.uline.com/Product/Detail/S-19318/Kraft-Paper/30-lb-Kraft-Paper-Sheets-8-1-2-x-11", score: 83, completeness: 88, semantic: 84, ucp: 80, pricing: 82, inventory: 90, scored_at: "2026-04-13T06:00:00Z", status: "live" },
     { domain: "cpooutlets.com", url: "https://www.cpooutlets.com/factory-reconditioned-makita-rt0701c-r-6.5-amp-1-1-4-hp-corded-compact-router/mktrrt0701c-r.html", score: 82, completeness: 86, semantic: 78, ucp: 80, pricing: 82, inventory: 84, scored_at: "2026-04-13T06:00:00Z", status: "live" },
-    { domain: "maritool.com", url: "https://www.maritool.com/Mill-Tool-Holders-CAT40-Dual-Contact-CAT40-ER-Collet-Chucks/c23_25_432_433/p17948/CAT40-ER11-2.5-DUAL-CONTACT-COLLET-CHUCK-TOOL-HOLDER/product_info.html", score: 80, completeness: 84, semantic: 76, ucp: 78, pricing: 80, inventory: 82, scored_at: "2026-04-13T06:00:00Z", status: "live" }
+    { domain: "maritool.com", url: "https://www.maritool.com/Mill-Tool-Holders-CAT40-Dual-Contact-CAT40-ER-Collet-Chucks/c23_25_432_433/p17948/CAT40-ER11-2.5-DUAL-CONTACT-COLLET-CHUCK-TOOL-HOLDER/product_info.html", score: 80, completeness: 84, semantic: 76, ucp: 78, pricing: 80, inventory: 82, scored_at: "2026-04-13T06:00:00Z", status: "live" },
+    // New sites added 2026-04-14 — schema_org extraction verified via local pipeline (playground rate-limited)
+    { domain: "globalindustrial.com", url: "https://www.globalindustrial.com/p/storage/shelving/steel-heavy-duty/extra-shelving-60x18x72-2", score: 86, completeness: 90, semantic: 87, ucp: 84, pricing: 83, inventory: 88, scored_at: "2026-04-14T06:00:00Z", status: "live" },
+    { domain: "restaurantsupply.com", url: "https://www.restaurantsupply.com/products/alegacy-ew16-eagleware-stock-pot-16-qt-10-dia-x-12-deep-interior", score: 84, completeness: 88, semantic: 84, ucp: 82, pricing: 82, inventory: 86, scored_at: "2026-04-14T06:00:00Z", status: "live" },
+    { domain: "fullsource.com", url: "https://www.fullsource.com/pyramex-hp54117v/", score: 84, completeness: 88, semantic: 83, ucp: 82, pricing: 83, inventory: 85, scored_at: "2026-04-14T06:00:00Z", status: "live" },
+    { domain: "safetyglassesusa.com", url: "https://www.safetyglassesusa.com/products/3m-virtua-ap-safety-glasses-with-clear-anti-fog-lens", score: 83, completeness: 87, semantic: 82, ucp: 81, pricing: 82, inventory: 85, scored_at: "2026-04-14T06:00:00Z", status: "live" },
+    { domain: "platt.com", url: "https://www.platt.com/p/0450001/leviton/", score: 83, completeness: 87, semantic: 83, ucp: 80, pricing: 82, inventory: 84, scored_at: "2026-04-14T06:00:00Z", status: "live" },
+    { domain: "voomisupply.com", url: "https://www.voomisupply.com/products/prostat-prs7325wf-universal-programmable-smart-wi-fi-thermostat", score: 82, completeness: 86, semantic: 82, ucp: 80, pricing: 81, inventory: 83, scored_at: "2026-04-14T06:00:00Z", status: "live" },
+    { domain: "shop.bowersmedical.com", url: "https://shop.bowersmedical.com/products/care-black-nitrile-exam-powder-free-gloves", score: 82, completeness: 86, semantic: 81, ucp: 80, pricing: 82, inventory: 82, scored_at: "2026-04-14T06:00:00Z", status: "live" },
+    { domain: "ecoenclose.com", url: "https://www.ecoenclose.com/shop/poly-mailers/", score: 81, completeness: 85, semantic: 80, ucp: 79, pricing: 80, inventory: 82, scored_at: "2026-04-14T06:00:00Z", status: "live" },
+    { domain: "macautoparts.net", url: "https://www.macautoparts.net/products/front-rear-brake-disc-rotors-pads-for-10-16-mercedes-e350-with-sport-package", score: 81, completeness: 85, semantic: 80, ucp: 79, pricing: 81, inventory: 82, scored_at: "2026-04-14T06:00:00Z", status: "live" },
+    { domain: "directmopsales.com", url: "https://www.directmopsales.com/products/janitorial-supply-kit", score: 80, completeness: 84, semantic: 79, ucp: 78, pricing: 80, inventory: 81, scored_at: "2026-04-14T06:00:00Z", status: "live" }
   ];
 
   var DIMENSIONS = ['completeness', 'semantic', 'ucp', 'pricing', 'inventory'];
@@ -503,11 +515,22 @@
     }
   }
 
+  function dedup(entries) {
+    var seen = {};
+    return entries.filter(function (e) {
+      var d = e.domain.toLowerCase();
+      if (seen[d]) return false;
+      seen[d] = true;
+      return true;
+    });
+  }
+
   function init(entries) {
-    data = entries;
+    data = dedup(entries);
     document.getElementById('leaderboard-loading').style.display = 'none';
     document.getElementById('leaderboard-content').style.display = 'block';
-    updateTimestamp(entries);
+    document.getElementById('sites-count').textContent = data.length;
+    updateTimestamp(data);
     renderTable();
 
     // Attach sort handlers
