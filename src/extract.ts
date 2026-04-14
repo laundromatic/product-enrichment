@@ -27,6 +27,29 @@ function needsBrowserFallback(result: ProductData): boolean {
 }
 
 /**
+ * Detect if fetched HTML is a CDN block page rather than real content.
+ * These pages return HTTP 200 but contain bot-blocking messages.
+ */
+function isBlockPage(html: string): boolean {
+  const blockPatterns = [
+    'Access is temporarily restricted',
+    'Please verify you are a human',
+    'Please verify you are not a robot',
+    'Enable JavaScript and cookies to continue',
+    'Checking your browser before accessing',
+    'Attention Required! | Cloudflare',
+    'Just a moment...',
+    'cf-browser-verification',
+    'challenge-platform',
+    'Pardon Our Interruption',
+    'Access Denied',
+    'This request was blocked by our security service',
+  ];
+  const lowerHtml = html.toLowerCase();
+  return blockPatterns.some(p => lowerHtml.includes(p.toLowerCase()));
+}
+
+/**
  * Apply _shopgraph metadata and optional threshold scrubbing to a product result.
  * @param fromCache - true if this result is being served from cache
  */
@@ -312,6 +335,23 @@ function isPartialSchemaResult(result: Partial<ProductData>): boolean {
  */
 async function extractFromHtmlContent(html: string, url: string, options?: EnrichmentOptions): Promise<ProductData> {
   const now = new Date().toISOString();
+
+  // Detect CDN block pages (return 200 but contain bot-blocking content)
+  if (isBlockPage(html)) {
+    console.log(`[extract] Block page detected for ${url} (html_length=${html.length})`);
+    // Try browser fallback if enabled
+    if (isBrowserFallbackEnabled()) {
+      try {
+        const { extractWithBrowser } = await import('./browser-extract.js');
+        const browserResult = await extractWithBrowser(url);
+        return applyThresholdAndMetadata(browserResult, options);
+      } catch (browserErr) {
+        console.error(`[extract] Browser fallback failed for blocked ${url}:`, browserErr instanceof Error ? browserErr.message : browserErr);
+      }
+    }
+    // No browser fallback or it failed — throw clear error
+    throw new Error('This site restricts automated access. Extraction requires authenticated identity (RFC 9421), which is on the ShopGraph roadmap.');
+  }
 
   // Try schema.org first (fast, high confidence)
   const schemaResult = extractSchemaOrg(html);
