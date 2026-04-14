@@ -10,6 +10,11 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/styles/main.css">
 <style>
+  /* Override content-inner max-width for the leaderboard — table needs full width */
+  .content-inner {
+    max-width: 900px;
+  }
+
   .last-updated {
     font-size: 0.75rem;
     color: var(--text-muted);
@@ -403,17 +408,19 @@
   }
 
   function generateSummary(row) {
-    var summary = row.domain + ' scored ' + row.score + ' out of 100 for agent readiness. ';
+    var summary = row.domain + ' scored ' + row.score + ' out of 100 for agent readiness — a measure of how well a site\'s product data can be consumed by AI agents and automated pipelines. The score evaluates structured data quality, data format consistency, pricing clarity, inventory signals, and access posture. ';
 
     if (row.status === 'live') {
       summary += 'ShopGraph extracts from this site today. ';
-      if (row.completeness >= 85) summary += 'The site serves rich structured data (completeness: ' + row.completeness + '). ';
-      if (row.semantic >= 80) summary += 'Extracted fields are consistently reliable (confidence: ' + row.semantic + '). ';
-      if (row.inventory >= 85) summary += 'Product data is regularly updated (freshness: ' + row.inventory + '). ';
+      summary += 'Completeness (' + row.completeness + '): how many expected product fields the site exposes. ';
+      summary += 'Semantic richness (' + row.semantic + '): depth of product attributes like categories, materials, and variants. ';
+      summary += 'UCP compatibility (' + row.ucp + '): how well the data maps to the Universal Commerce Protocol schema. ';
+      summary += 'Pricing clarity (' + row.pricing + '): whether price, currency, and availability are machine-readable. ';
+      summary += 'Inventory signals (' + row.inventory + '): stock status, lead time, and fulfillment indicators.';
     } else {
       summary += 'This site currently restricts automated access from datacenter IPs. ';
-      summary += 'Full extraction requires authenticated identity (RFC 9421), which is on the ShopGraph roadmap. ';
-      if (row.score >= 80) summary += 'Once access is established, the high readiness score indicates reliable extraction is expected. ';
+      summary += 'Full extraction requires authenticated identity (RFC 9421 Signed Agent registration with Cloudflare), which is on the ShopGraph roadmap. ';
+      if (row.score >= 80) summary += 'The high readiness score means the site has quality product data — access is the only barrier to extraction.';
     }
 
     return summary;
