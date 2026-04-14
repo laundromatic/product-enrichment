@@ -195,13 +195,25 @@ a:hover { color: var(--link-hover); text-decoration: underline; }
 }
 
 .sidebar-footer {
+  display: none; /* Deprecated — version link now inline in nav */
+}
+
+.sidebar-version-link {
   padding: 0;
   margin-top: 12px;
-  border-top: none;
   font-family: var(--font-sans);
   font-size: 13px;
   color: #9999a2;
   line-height: normal;
+}
+
+.sidebar-version-link a {
+  color: #9999a2;
+  text-decoration: none;
+}
+
+.sidebar-version-link a:hover {
+  color: #222;
 }
 
 .sidebar-footer a {

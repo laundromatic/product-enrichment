@@ -238,13 +238,13 @@
       nav.appendChild(sec);
     });
 
-    sidebar.appendChild(nav);
+    // Version/GitHub link at the bottom of the nav (inline, not a separate footer)
+    const versionEl = document.createElement('div');
+    versionEl.className = 'sidebar-version-link';
+    versionEl.innerHTML = 'v' + VERSION + ' &middot; <a href="' + GITHUB_URL + '" target="_blank" rel="noopener">GitHub</a>';
+    nav.appendChild(versionEl);
 
-    // Footer
-    const footer = document.createElement('div');
-    footer.className = 'sidebar-footer';
-    footer.innerHTML = 'v' + VERSION + ' &middot; <a href="' + GITHUB_URL + '" target="_blank" rel="noopener">GitHub</a>';
-    sidebar.appendChild(footer);
+    sidebar.appendChild(nav);
 
     document.body.appendChild(sidebar);
 
