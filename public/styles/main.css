@@ -60,11 +60,11 @@ a:hover { color: var(--link-hover); text-decoration: underline; }
   top: 3.75rem;
   bottom: 1.5rem;
   left: 40px;
-  width: 180px;
+  width: 260px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 0 0 20px;
+  padding: 0 24px 20px 24px;
   overflow-y: auto;
   scrollbar-width: none;
   z-index: 50;
@@ -234,7 +234,7 @@ a:hover { color: var(--link-hover); text-decoration: underline; }
 
 .content-inner {
   max-width: var(--content-max);
-  margin: 0 0 0 260px;
+  margin: 0 0 0 340px;
   padding: 3.5rem 1.5rem 3rem;
 }
 
