@@ -817,12 +817,12 @@
       <p>Your agent sends a URL. It does not need to know whether the data came from Schema.org markup, LLM extraction, or Playwright rendering. The pipeline handles tier selection. The agent gets structured data back with metadata showing which path succeeded.</p>
       <div class="code-header"><span>JavaScript</span><button class="copy-btn">Copy</button></div>
       <pre data-lang="javascript"><code>const result = await shopgraph.enrich(
-  'https://www.grainger.com/product/DAYTON-1-2-HP-Jet-Pump-5UXK1'
+  'https://www.uline.com/Product/Detail/S-19318/Kraft-Paper/30-lb-Kraft-Paper-Sheets-8-1-2-x-11'
 );
 
 // Agent uses the data without caring about extraction tier
 console.log(result.product.title);
-// "DAYTON 1/2 HP Jet Pump"
+// "30 lb Kraft Paper Sheets - 8 1/2 x 11"
 
 // But the metadata is there if you need it
 console.log(result._shopgraph.extraction_method);

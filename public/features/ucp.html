@@ -110,7 +110,7 @@
       <p>Note: If you apply a <code>strict_confidence_threshold</code> to a request, fields falling below that threshold are omitted from the <code>line_item</code>, and the <code>_extraction_status</code> will downgrade to <code>partial</code>. For agent routing workflows, we recommend omitting the threshold and evaluating the <code>field_confidence</code> block directly.</p>
 
       <h2>Example: Catalog Ingestion</h2>
-      <p>A nightly pipeline processes supplier URLs across Shopify, Grainger, and McMaster-Carr. Each response comes back as a UCP line_item. The pipeline writes one parser regardless of the merchant's native data format.</p>
+      <p>A nightly pipeline processes supplier URLs across Shopify, Uline, and McMaster-Carr. Each response comes back as a UCP line_item. The pipeline writes one parser regardless of the merchant's native data format.</p>
       <div class="code-header"><span>JavaScript</span><button class="copy-btn">Copy</button></div>
       <pre data-lang="javascript"><code>const result = await fetch('https://shopgraph.dev/api/enrich', {
   method: 'POST',
@@ -130,7 +130,7 @@ await catalog.upsert(data.line_item);  // Same shape for every merchant</code></
       <p style="font-size:0.75rem;color:var(--text-muted)">UCP output combined with threshold filtering. One integration path for any supplier URL.</p>
 
       <div class="alert alert-info">
-        <strong>What this unlocks:</strong> One integration for every merchant. Your pipeline consumes UCP line_items regardless of whether the source is Shopify, Grainger, or McMaster-Carr. No per-supplier mappers. No custom parsers.
+        <strong>What this unlocks:</strong> One integration for every merchant. Your pipeline consumes UCP line_items regardless of whether the source is Shopify, Uline, or McMaster-Carr. No per-supplier mappers. No custom parsers.
       </div>
 
       <div class="alert alert-info">

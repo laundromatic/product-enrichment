@@ -106,7 +106,7 @@
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer sg_live_abc123" \
   -d '{
-    "url": "https://www.grainger.com/product/DAYTON-1-3-HP-4M206",
+    "url": "https://www.uline.com/Product/Detail/S-19318/Kraft-Paper/30-lb-Kraft-Paper-Sheets-8-1-2-x-11",
     "format": "ucp",
     "strict_confidence_threshold": 0.8,
     "include_score": true
@@ -128,15 +128,16 @@
       <div class="code-header"><span>200 OK — with include_score: true</span><button class="copy-btn">Copy</button></div>
       <pre data-lang="json"><code>{
   "product": {
-    "product_name": "DAYTON 1/2 HP Jet Pump, Model 5UXK1",
-    "brand": "DAYTON",
+    "product_name": "30 lb Kraft Paper Sheets - 8 1/2 x 11",
+    "brand": "Uline",
     "price": {
-      "amount": 284.00,
+      "amount": 92.00,
       "currency": "USD"
     },
     "availability": "in_stock",
-    "primary_image_url": "https://static.grainger.com/rp/s/is/image/Grainger/5UXK1_AS01",
-    "categories": ["Jet Pumps", "Pumps", "Plumbing"],
+    "sku": "S-19318",
+    "primary_image_url": "https://www.uline.com/images/product/large/S-19318.jpg",
+    "categories": ["Kraft Paper", "Paper Sheets", "Packaging"],
     "_shopgraph": {
       "extraction_method": "schema_org",
       "data_source": "live",
