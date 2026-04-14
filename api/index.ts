@@ -865,7 +865,7 @@ app.post('/api/playground', async (req, res) => {
     res.json({ product, ...scoreData, playground: true, runs_remaining: limit.limit - limit.used, cached: false });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Extraction failed';
-    res.status(500).json({ error: 'extraction_failed', message, playground: true, runs_remaining: limit.limit - limit.used, upgrade: 'https://shopgraph.dev/pricing' });
+    res.status(500).json({ error: 'extraction_failed', message: 'This site blocked the extraction request. Try a different URL, or try again in a few minutes.', playground: true, runs_remaining: limit.limit - limit.used });
   }
 });
 
