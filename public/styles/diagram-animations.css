@@ -168,11 +168,15 @@
   box-shadow: rgba(0,0,0,0.04) 0px 1px 3px;
 }
 
-/* Animated states — applied by JS */
-.dg-box.dg-animate { animation: dgPulseBlue 4.2s ease-in-out infinite; }
-.dg-box.dg-success.dg-animate { animation: dgPulseGreen 4.2s ease-in-out infinite; }
-.dg-box.dg-error.dg-animate { animation: dgPulseRed 4.2s ease-in-out infinite; }
-.dg-box.dg-warning.dg-animate { animation: dgPulseAmber 4.2s ease-in-out infinite; }
+/* Animated states — applied by JS.
+   Duration is per-element cycle time. Staggered animation-delay
+   values are applied by diagram-animations.js to create sequential flow.
+   The total visual cycle = duration, with each element's pulse offset
+   by its position in the diagram. */
+.dg-box.dg-animate { animation: dgPulseBlue 4.2s ease-in-out infinite both; }
+.dg-box.dg-success.dg-animate { animation: dgPulseGreen 4.2s ease-in-out infinite both; }
+.dg-box.dg-error.dg-animate { animation: dgPulseRed 4.2s ease-in-out infinite both; }
+.dg-box.dg-warning.dg-animate { animation: dgPulseAmber 4.2s ease-in-out infinite both; }
 
 /* Label base */
 .dg-label {
@@ -180,18 +184,18 @@
   transition: color 0.3s ease;
 }
 
-.dg-label.dg-animate { animation: dgLabelBlue 4.2s ease-in-out infinite; }
-.dg-label.dg-label-green.dg-animate { animation: dgLabelGreen 4.2s ease-in-out infinite; }
-.dg-label.dg-label-red.dg-animate { animation: dgLabelRed 4.2s ease-in-out infinite; }
-.dg-label.dg-label-amber.dg-animate { animation: dgLabelAmber 4.2s ease-in-out infinite; }
+.dg-label.dg-animate { animation: dgLabelBlue 4.2s ease-in-out infinite both; }
+.dg-label.dg-label-green.dg-animate { animation: dgLabelGreen 4.2s ease-in-out infinite both; }
+.dg-label.dg-label-red.dg-animate { animation: dgLabelRed 4.2s ease-in-out infinite both; }
+.dg-label.dg-label-amber.dg-animate { animation: dgLabelAmber 4.2s ease-in-out infinite both; }
 
 /* SVG label base (uses fill instead of color) */
-.dg-fill.dg-animate { animation: dgFillBlue 4.2s ease-in-out infinite; }
-.dg-fill.dg-fill-green.dg-animate { animation: dgFillGreen 4.2s ease-in-out infinite; }
-.dg-fill.dg-fill-red.dg-animate { animation: dgFillRed 4.2s ease-in-out infinite; }
+.dg-fill.dg-animate { animation: dgFillBlue 4.2s ease-in-out infinite both; }
+.dg-fill.dg-fill-green.dg-animate { animation: dgFillGreen 4.2s ease-in-out infinite both; }
+.dg-fill.dg-fill-red.dg-animate { animation: dgFillRed 4.2s ease-in-out infinite both; }
 
 /* Connector */
-.dg-connector.dg-animate { animation: dgConnectorPulse 2s ease-in-out infinite; }
+.dg-connector.dg-animate { animation: dgConnectorPulse 2s ease-in-out infinite both; }
 
 /* Reduce motion preference */
 @media (prefers-reduced-motion: reduce) {

@@ -112,6 +112,53 @@
   .score-amber { color: #d97706; }
   .score-red { color: #dc2626; }
 
+  /* Status pill badges */
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1;
+    padding: 3px 8px;
+    border-radius: 9999px;
+    white-space: nowrap;
+  }
+
+  .status-pill .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .status-pill.status-live {
+    color: #15803d;
+    background: rgba(22, 163, 74, 0.1);
+  }
+
+  .status-pill.status-live .status-dot {
+    background: #16a34a;
+  }
+
+  .status-pill.status-partial {
+    color: #b45309;
+    background: rgba(217, 119, 6, 0.1);
+  }
+
+  .status-pill.status-partial .status-dot {
+    background: #d97706;
+  }
+
+  .status-pill.status-roadmap {
+    color: #6b7280;
+    background: rgba(107, 114, 128, 0.1);
+  }
+
+  .status-pill.status-roadmap .status-dot {
+    background: #9ca3af;
+  }
+
   /* Detail row */
   .detail-row td {
     padding: 0;
@@ -322,10 +369,11 @@
     data.sort(function (a, b) {
       var aVal = a[key];
       var bVal = b[key];
-      // For status: live=0, roadmap=1 so live sorts first in asc
+      // For status: live=0, partial=1, roadmap=2 so live sorts first in asc
       if (key === 'status') {
-        aVal = aVal === 'live' ? 0 : 1;
-        bVal = bVal === 'live' ? 0 : 1;
+        var statusOrder = { live: 0, partial: 1, roadmap: 2 };
+        aVal = statusOrder[aVal] !== undefined ? statusOrder[aVal] : 3;
+        bVal = statusOrder[bVal] !== undefined ? statusOrder[bVal] : 3;
       } else if (typeof aVal === 'string') {
         aVal = aVal.toLowerCase();
         bVal = bVal.toLowerCase();
@@ -345,11 +393,11 @@
       var tr = document.createElement('tr');
       tr.setAttribute('data-domain', row.domain);
 
-      var statusClass = row.status === 'live' ? 'score-green' : '';
-      var statusLabel = row.status === 'live' ? 'live' : 'roadmap';
+      var statusLabel = row.status || 'live';
+      var statusPill = '<span class="status-pill status-' + statusLabel + '"><span class="status-dot"></span>' + statusLabel + '</span>';
       tr.innerHTML =
         '<td class="domain-cell">' + row.domain + '</td>' +
-        '<td class="' + statusClass + '" style="font-size:0.6875rem;font-weight:600">' + statusLabel + '</td>' +
+        '<td>' + statusPill + '</td>' +
         '<td class="score-cell ' + scoreClass(row.score) + '">' + row.score + '</td>' +
         '<td class="dim-cell">' + row.completeness + '</td>' +
         '<td class="dim-cell">' + row.semantic + '</td>' +

@@ -82,7 +82,7 @@ describe('subscriptions', () => {
 
     it('uses correct limit per tier', async () => {
       const free = await checkLimit(mockRedis as never, 'cust-1', 'free');
-      expect(free.limit).toBe(500);
+      expect(free.limit).toBe(50);
 
       const starter = await checkLimit(mockRedis as never, 'cust-1', 'starter');
       expect(starter.limit).toBe(10_000);

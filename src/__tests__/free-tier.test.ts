@@ -47,8 +47,8 @@ describe('FreeTierTracker', () => {
     const summary = tracker.getSummary('client-1');
     expect(summary).toEqual({
       used: 3,
-      limit: 500,
-      remaining: 497,
+      limit: 50,
+      remaining: 47,
     });
   });
 

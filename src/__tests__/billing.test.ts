@@ -144,8 +144,8 @@ describe('credit multipliers', () => {
 // ── Tier configuration tests ──────────────────────────────────────
 
 describe('tier configs', () => {
-  it('free tier has 500 monthly limit', () => {
-    expect(TIER_CONFIGS.free.monthlyLimit).toBe(500);
+  it('free tier has 50 monthly limit', () => {
+    expect(TIER_CONFIGS.free.monthlyLimit).toBe(50);
   });
 
   it('starter tier costs $99/month', () => {

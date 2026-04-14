@@ -83,7 +83,7 @@ export function applyThresholdAndMetadata(
     data_source: fromCache ? 'cache' : 'live',
     field_confidence: effectiveConfidence,
     ...(fieldFreshness ? { field_freshness: fieldFreshness } : {}),
-    confidence_method: 'tier_baseline',
+    confidence_method: product.extraction_method === 'hybrid' ? 'cross_signal' : 'tier_baseline',
   };
   product._shopgraph = metadata;
 
