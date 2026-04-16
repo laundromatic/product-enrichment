@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="ShopGraph self-healing architecture: three-tier fallback pipeline with automatic routing around Cloudflare blocks, missing semantic data, and JS-rendered DOMs.">
+<meta name="description" content="ShopGraph self-healing architecture: three-tier extraction pipeline that escalates through Schema.org, LLM inference, and headless browser when earlier tiers return incomplete data.">
 <title>Self-Healing Architecture — ShopGraph</title>
 <link rel="icon" type="image/png" href="/icon.png">
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
@@ -444,7 +444,7 @@
     <div class="content-inner">
 
       <h1>Self-Healing Architecture</h1>
-      <p class="subtitle">B2B portals and dynamic retail sites require multiple extraction strategies. ShopGraph uses a three-tier fallback pipeline to maximize extraction coverage, automatically routing around Cloudflare blocks, missing semantic data, and JavaScript-rendered DOMs.</p>
+      <p class="subtitle">B2B portals and dynamic retail sites require multiple extraction strategies. ShopGraph uses a three-tier pipeline that escalates through Schema.org, LLM inference, and headless browser — handling missing structured data, JavaScript-rendered content, and sites requiring browser execution. Each tier's confidence score reflects its method.</p>
 
       <blockquote style="border-left:2px solid rgba(0,0,0,0.08);padding-left:1rem;margin:1rem 0;font-size:0.8125rem;color:var(--text-secondary)">
         <strong>Design Principle:</strong> Full provenance. Every response shows which extraction method produced each field. Your downstream systems make informed decisions.
