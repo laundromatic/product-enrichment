@@ -1,6 +1,6 @@
 # n8n-nodes-shopgraph
 
-[n8n](https://n8n.io/) community node for [ShopGraph](https://shopgraph.dev) -- authenticated product data extraction. Feed it a product page URL (or raw HTML) and get back structured fields (name, brand, price, images, availability, categories) with per-field confidence scores, ready for your automation workflows.
+[n8n](https://n8n.io/) community node for [ShopGraph](https://shopgraph.dev) -- product data extraction that tells you when it's guessing. Feed it a product page URL (or raw HTML) and get back structured fields (name, brand, price, images, availability, categories) with per-field confidence scores, so your workflows know what to trust.
 
 ## Installation
 
@@ -61,6 +61,6 @@ npm install n8n-nodes-shopgraph
 
 ## Links
 
-- [ShopGraph Documentation](https://shopgraph.dev/docs)
+- [ShopGraph](https://shopgraph.dev)
 - [ShopGraph Dashboard](https://shopgraph.dev/dashboard)
 - [n8n Community Nodes](https://docs.n8n.io/integrations/community-nodes/)

@@ -7,7 +7,7 @@ import {
 export class ShopGraphApi implements ICredentialType {
 	name = 'shopGraphApi';
 	displayName = 'ShopGraph API';
-	documentationUrl = 'https://shopgraph.dev/docs';
+	documentationUrl = 'https://shopgraph.dev/tools/api';
 
 	properties: INodeProperties[] = [
 		{
