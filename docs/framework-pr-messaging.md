@@ -2,17 +2,28 @@
 
 ## Positioning
 
-ShopGraph's value is not extraction. Any LLM can extract product data from HTML. ShopGraph's value is the **confidence contract**: per-field confidence scores, server-side threshold enforcement, multi-method calibration, and a clear autonomy/escalation pattern. No incumbent answers the question "should my agent act on this data?" ShopGraph does.
+ShopGraph's value is not extraction. Any extractor can pull product data from HTML. ShopGraph's value is **extraction provenance**: every field shows which method produced it, how methods agreed or disagreed, and a confidence score you can threshold. Server-side filtering removes uncertain fields before they reach your agent.
 
 **Lead with the problem, not the mechanism:**
 - Wrong: "Extract product data with confidence scores"
 - Right: "When an agent writes a price into a purchase order, how does it know the price is right?"
 
-### Core positioning
+### Locked Branding (Phase 4)
 
-- **1-Liner:** Per-field confidence scoring for commerce data extraction.
-- **Elevator pitch:** Product extraction APIs return data. ShopGraph returns data with per-field confidence scores so agents can decide which fields to trust, which to verify, and which to reject. Server-side threshold enforcement means autonomous agents never see data below their quality bar.
-- **What incumbents don't offer:** The ability for agents to make calibrated trust decisions on extracted commerce data, enforced server-side, grounded in multi-method extraction, with a clear autonomy/escalation pattern.
+These five fields are the source of truth. All PR and customer-facing copy derives from them.
+
+- **1-Liner:** The extraction API that shows its work.
+- **Elevator pitch:** ShopGraph extracts product data from any URL using a three-tier pipeline (structured markup, LLM inference, headless browser), then tells you exactly which method produced each field and how confident the system is. You set the threshold. Fields that don't meet it never reach your agent.
+- **Thesis:** Product data quality infrastructure for agent commerce.
+- **Identity:** Extraction provenance layer.
+- **Audience:** Builders of commerce automation whose pipelines write product data into downstream systems.
+
+### Supporting one-liners (single-sentence use)
+
+- "Extraction is a solved problem. Trust is not."
+- "Every field shows which extraction method produced it and how methods agreed or disagreed."
+- "A wrong price is worse than a missing price."
+- "Your threshold, your rules."
 
 ### The confidence contract (the real product)
 
@@ -74,11 +85,11 @@ All code examples use the real ShopGraph API response shape. See `docs/api-respo
 
 ## PR #1: Vercel AI SDK
 
-**Title:** `Add per-field confidence scoring example for commerce data (ShopGraph)`
+**Title:** `Add product extraction example with per-field confidence scoring (ShopGraph)`
 
 ### Opening (README.md)
 
-Product extraction APIs return data. ShopGraph returns data with per-field confidence scores (0.0 to 1.0) so your UI can show users which fields to trust and which to verify.
+Product extraction APIs return data. They don't tell you how much to trust each field. ShopGraph returns data with per-field confidence scores (0.0 to 1.0) so your UI can show users which fields to trust and which to verify.
 
 This example builds a product research chat interface where extracted fields are color-coded by confidence: green for fields the agent trusts, amber for fields that need human verification.
 
@@ -125,17 +136,17 @@ if (priceConfidence >= 0.85) {
 
 ## PR #2: LangChain Cookbook
 
-**Title:** `Add confidence-aware procurement agent cookbook (ShopGraph)`
+**Title:** `Add procurement agent cookbook with confidence-driven autonomy routing (ShopGraph)`
 
 ### Opening (first markdown cell)
 
-When a procurement agent auto-fills a purchase order, a wrong price is worse than a missing price. ShopGraph returns per-field confidence scores so the agent can decide: act autonomously on high-confidence fields, route low-confidence fields to human review.
+When an agent writes a price into a purchase order, a wrong price is worse than a missing price. ShopGraph returns per-field confidence scores so the agent can decide: act autonomously on high-confidence fields, route low-confidence fields to human review.
 
-This cookbook builds a procurement agent with two extraction modes:
-- **Research mode** (`extract_product`) — returns all fields with confidence scores for human review
-- **Autofill mode** (`extract_product_for_autofill`) — server-side filtering removes fields below threshold before they enter agent context
+This cookbook builds a procurement agent with two extraction modes, both using the same `enrich_product` call:
+- **Research mode** — call `enrich_product` with no threshold. Returns all fields with per-field confidence scores. Human reviews everything.
+- **Autofill mode** — call `enrich_product` with `strict_confidence_threshold` set. Fields below the threshold are scrubbed server-side before the response reaches the agent.
 
-### Why two modes
+### Why server-side filtering
 
 Client-side filtering (checking confidence after the response) still lets the agent *see* low-confidence data. In a long context window, the agent may reference a scrubbed price because it was visible earlier. Server-side filtering via `strict_confidence_threshold` removes the temptation — the field never enters the agent's context.
 
@@ -143,13 +154,13 @@ Client-side filtering (checking confidence after the response) still lets the ag
 
 ```python
 # Research mode — human reviews everything
-data = extract_product("https://www.moglix.com/bosch-1-2-inch-impact-wrench-gds-18-v-ec-250/mp/msne9bg5j9egz8")
+data = enrich_product("https://www.moglix.com/bosch-1-2-inch-impact-wrench-gds-18-v-ec-250/mp/msne9bg5j9egz8")
 # Returns all fields with confidence scores
 
 # Autofill mode — agent only sees high-confidence fields
-data = extract_product_for_autofill(
+data = enrich_product(
     "https://www.moglix.com/bosch-1-2-inch-impact-wrench-gds-18-v-ec-250/mp/msne9bg5j9egz8",
-    threshold=0.9,
+    strict_confidence_threshold=0.9,
 )
 # Fields below 0.9 are scrubbed server-side — agent cannot see them
 ```
@@ -157,16 +168,16 @@ data = extract_product_for_autofill(
 ### System prompt (teaches the decision)
 
 ```
-Choose between two extraction tools:
+Use enrich_product for every extraction. Set the threshold based on downstream use:
 
-- If researching a product or summarizing for a human, call extract_product.
-  Show all fields with confidence scores. Flag anything below 0.85.
+- If researching a product or summarizing for a human, call enrich_product
+  with no threshold. Show all fields with confidence scores. Flag anything
+  below 0.85.
 
 - If filling a purchase order or writing values into any system without
-  human review, call extract_product_for_autofill. Default threshold 0.9.
-  If a required field is missing, stop and ask the human to verify.
-
-Never mix modes in a single operation.
+  human review, call enrich_product with strict_confidence_threshold=0.9.
+  If a required field is missing in the response, stop and ask the human
+  to verify.
 ```
 
 ---
