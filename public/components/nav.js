@@ -18,7 +18,7 @@
         { label: 'UCP Output', href: '/features/ucp' },
         { label: 'AgentReady Scoring', href: '/features/agentready' },
         { label: 'Leaderboard', href: '/leaderboard' },
-        { label: 'Self-Healing', href: '/features/self-healing' },
+        { label: 'How Extraction Works', href: '/features/self-healing' },
       ],
     },
     {
@@ -52,13 +52,12 @@
 
   // Short labels for long h2 text in the subnav
   var SUBNAV_LABELS = {
-    // Self-Healing
+    // How Extraction Works
     'Extraction Pipeline Overview': 'Overview',
     'The Escalation Logic': 'Escalation',
     'Latency & Cost Tradeoffs': 'Latency & Cost',
     'Payload Transparency': 'Payload',
     'Continuous Calibration': 'Calibration',
-    'ShopGraph Routing Engine': 'Routing Engine',
     // Confidence
     'How It Works': 'How It Works',
     'Tier Baselines': 'Baselines',
