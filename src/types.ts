@@ -39,6 +39,8 @@ export interface ConfidenceData {
   per_field: Record<string, number>;
   /** Per-field attribution: which extraction tier produced each value. */
   per_field_method?: Record<string, ExtractionMethod>;
+  /** Per-field confidence modifier ledger (see FieldModifierEntry). */
+  per_field_modifiers?: Record<string, FieldModifierEntry[]>;
 }
 
 /**
@@ -228,6 +230,17 @@ export function anyFieldBelowThreshold(
   return false;
 }
 
+/**
+ * Per-field confidence modifier ledger entry. Each field's ledger is an
+ * ordered array: first entry is `base` (with tier method), 0+ `delta`
+ * entries (each with `reason` and optional `source`), last entry is
+ * `result`. Sum of base + deltas equals the result within 0.01 tolerance.
+ */
+export type FieldModifierEntry =
+  | { base: number; method: ExtractionMethod }
+  | { delta: number; reason: string; source?: string }
+  | { result: number };
+
 export interface ShopGraphMetadata {
   source_url: string;
   extraction_timestamp: string;
@@ -236,6 +249,7 @@ export interface ShopGraphMetadata {
   data_source: 'live' | 'cache';
   field_confidence: Record<string, number>;
   field_method?: Record<string, ExtractionMethod>;
+  field_modifiers?: Record<string, FieldModifierEntry[]>;
   field_freshness?: Record<string, FieldFreshness>;
   confidence_method: string;
 }

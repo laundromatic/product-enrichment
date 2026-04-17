@@ -221,7 +221,7 @@
 
       // Detail row (collapsed by default)
       html += '<tr class="pg-field-detail" id="pg-detail-' + f + '" style="display:none"><td colspan="6" style="padding:12px 16px;background:rgba(0,0,0,0.02);border-bottom:1px solid rgba(0,0,0,0.06)">';
-      html += buildBreakdownHtml(f, conf, fieldSource(shopgraph, method, f));
+      html += buildBreakdownHtml(f, conf, method, shopgraph);
       html += '<div style="margin-top:8px;font-size:11px"><a href="/features/confidence" style="color:var(--link-color)">How scores are calculated &rarr;</a></div>';
       html += '</td></tr>';
     });
@@ -280,30 +280,54 @@
   }
 
   // Build the per-field confidence breakdown block shown when a row expands.
-  // Modifier-level detail is not exposed by the API today — we show the
-  // tier baseline, the delta to the final score, and link out to
-  // /features/confidence for the full methodology.
-  function buildBreakdownHtml(field, conf, method) {
+  // Prefers the full ledger at _shopgraph.field_modifiers[field] when present
+  // (every base, delta with reason/source, and the final result). Falls back
+  // to the baseline-only rendering for older cached responses that lack the
+  // per-field ledger.
+  function buildBreakdownHtml(field, conf, method, shopgraph) {
     if (conf === undefined || conf === null) {
       return '<div style="font-family:var(--font-mono);font-size:11px;color:var(--body-color)">' +
              escapeHtml(field) + ': no confidence scoring' +
              '</div><div style="font-size:11px;color:var(--text-secondary);margin-top:4px">List fields report count only. Confidence scoring applies to scalar values (price, title, brand, availability).</div>';
     }
-    var baseline = tierBaseline(method);
-    var lines = [];
+
+    var ledger = shopgraph && shopgraph.field_modifiers && shopgraph.field_modifiers[field];
+    var fieldMethod = shopgraph && shopgraph.field_method && shopgraph.field_method[field];
     var pct = (conf * 100).toFixed(0) + '%';
+    var lines = [];
     lines.push(escapeHtml(field) + ': ' + pct);
-    if (baseline !== null) {
-      lines.push('  Base: ' + baseline.toFixed(2) + ' (' + sourceLabel(method) + ' tier baseline)');
-      var delta = conf - baseline;
-      if (Math.abs(delta) >= 0.005) {
-        var sign = delta > 0 ? '+' : '';
-        lines.push('  ' + sign + delta.toFixed(2) + ' Field-level modifier adjustments');
+
+    if (ledger && ledger.length > 0) {
+      for (var i = 0; i < ledger.length; i++) {
+        var entry = ledger[i];
+        if (entry && typeof entry.base === 'number') {
+          var m = entry.method || fieldMethod || method;
+          lines.push('  Base: ' + entry.base.toFixed(2) + ' (' + sourceLabel(m) + ' tier baseline)');
+        } else if (entry && typeof entry.delta === 'number') {
+          var sign = entry.delta > 0 ? '+' : '';
+          var line = '  ' + sign + entry.delta.toFixed(2) + ' ' + (entry.reason || '');
+          if (entry.source) line += ' (' + entry.source + ')';
+          lines.push(line);
+        } else if (entry && typeof entry.result === 'number') {
+          lines.push('  = ' + entry.result.toFixed(2));
+        }
       }
-      lines.push('  = ' + conf.toFixed(2));
     } else {
-      lines.push('  (Method: ' + escapeHtml(method) + ')');
+      // Fallback: baseline-only rendering for older cached responses / UCP format.
+      var baseline = tierBaseline(fieldMethod || method);
+      if (baseline !== null) {
+        lines.push('  Base: ' + baseline.toFixed(2) + ' (' + sourceLabel(fieldMethod || method) + ' tier baseline)');
+        var delta = conf - baseline;
+        if (Math.abs(delta) >= 0.005) {
+          var s = delta > 0 ? '+' : '';
+          lines.push('  ' + s + delta.toFixed(2) + ' Field-level modifier adjustments');
+        }
+        lines.push('  = ' + conf.toFixed(2));
+      } else {
+        lines.push('  (Method: ' + escapeHtml(fieldMethod || method) + ')');
+      }
     }
+
     return '<pre style="margin:0;font-family:var(--font-mono);font-size:11px;background:transparent;padding:0;color:var(--body-color);white-space:pre-wrap">' + lines.join('\n') + '</pre>';
   }
 

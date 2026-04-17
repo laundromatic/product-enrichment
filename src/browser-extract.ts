@@ -1,4 +1,4 @@
-import type { ProductData, ExtractionMethod } from './types.js';
+import type { ProductData, ExtractionMethod, FieldModifierEntry } from './types.js';
 import { extractSchemaOrg } from './schema-org.js';
 import { extractWithLlm } from './llm-extract.js';
 import chromium from '@sparticuz/chromium';
@@ -24,8 +24,8 @@ function randomUserAgent(): string {
 }
 
 /**
- * Retag a confidence block's per-field method as `playwright`. The
- * rendered-HTML path re-runs schema.org / llm extractors on content
+ * Retag a confidence block's per-field method + modifiers as `playwright`.
+ * The rendered-HTML path re-runs schema.org / llm extractors on content
  * that was only obtainable via browser rendering, so the source tier is
  * effectively `playwright` for every produced field.
  */
@@ -33,15 +33,25 @@ function retagForPlaywright(confidence: {
   overall: number;
   per_field: Record<string, number>;
   per_field_method?: Record<string, ExtractionMethod>;
+  per_field_modifiers?: Record<string, FieldModifierEntry[]>;
 }) {
   const perFieldMethod: Record<string, ExtractionMethod> = {};
+  const perFieldModifiers: Record<string, FieldModifierEntry[]> = {};
   for (const field of Object.keys(confidence.per_field)) {
     perFieldMethod[field] = 'playwright';
+    const original = confidence.per_field_modifiers?.[field] ?? [];
+    perFieldModifiers[field] = original.map((entry) => {
+      if ('base' in entry) {
+        return { base: entry.base, method: 'playwright' } satisfies FieldModifierEntry;
+      }
+      return entry;
+    });
   }
   return {
     overall: confidence.overall,
     per_field: confidence.per_field,
     per_field_method: perFieldMethod,
+    per_field_modifiers: perFieldModifiers,
   };
 }
 

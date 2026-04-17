@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import type { ProductData, ExtractionMethod } from './types.js';
-import { LLM_BASE_BASELINE, LLM_LOW_BASELINE, LLM_BOOSTED_BASELINE, getFieldConfidence } from './types.js';
+import type { ProductData, ExtractionMethod, FieldModifierEntry } from './types.js';
+import { LLM_BASE_BASELINE, LLM_LOW_BASELINE, LLM_BOOSTED_BASELINE, FIELD_CONFIDENCE_MODIFIERS, getFieldConfidence } from './types.js';
 import { cleanHtml, type PriceHints } from './html-cleaner.js';
 
 const EXTRACTION_PROMPT = `You are a product data extraction expert. Given the text content of a product page, extract structured product information.
@@ -118,19 +118,20 @@ export async function extractWithLlm(
 
   const perField: Record<string, number> = {};
   const perFieldMethod: Record<string, ExtractionMethod> = {};
+  const perFieldModifiers: Record<string, FieldModifierEntry[]> = {};
   const hasPriceHints = priceHints.prices.length > 0 || priceHints.metaPriceAmount !== null;
   const hasAvailHints = priceHints.availabilitySignals.length > 0 || priceHints.metaAvailability !== null;
 
   const setField = (name: string, value: unknown, boosted = false): boolean => {
-    if (value !== null && value !== undefined && value !== '') {
-      const base = boosted ? LLM_BOOSTED_BASELINE : LLM_BASE_BASELINE;
-      perField[name] = getFieldConfidence(base, name);
-      perFieldMethod[name] = boosted ? 'llm_boosted' : 'llm';
-      return true;
-    }
-    perField[name] = getFieldConfidence(LLM_LOW_BASELINE, name);
-    perFieldMethod[name] = 'llm';
-    return false;
+    const hasValue = value !== null && value !== undefined && value !== '';
+    const base = hasValue
+      ? (boosted ? LLM_BOOSTED_BASELINE : LLM_BASE_BASELINE)
+      : LLM_LOW_BASELINE;
+    const final = getFieldConfidence(base, name);
+    perField[name] = final;
+    perFieldMethod[name] = boosted && hasValue ? 'llm_boosted' : 'llm';
+    perFieldModifiers[name] = buildLlmLedger(name, base, final, boosted && hasValue);
+    return hasValue;
   };
 
   const productName = typeof parsed.product_name === 'string' ? parsed.product_name : null;
@@ -195,8 +196,44 @@ export async function extractWithLlm(
       overall,
       per_field: perField,
       per_field_method: perFieldMethod,
+      per_field_modifiers: perFieldModifiers,
     },
   };
+}
+
+/**
+ * Build the confidence modifier ledger for an LLM-sourced field.
+ * Base is the active LLM baseline (boosted, base, or low). Field-level
+ * modifiers attach an "LLM inferred" penalty (negative) or a "Structured
+ * data match" credit (positive, when a page hint confirmed the value).
+ * Sum of base + deltas = result within 0.01.
+ */
+function buildLlmLedger(
+  fieldName: string,
+  base: number,
+  finalScore: number,
+  boosted: boolean,
+): FieldModifierEntry[] {
+  const method: ExtractionMethod = boosted ? 'llm_boosted' : 'llm';
+  const ledger: FieldModifierEntry[] = [];
+  ledger.push({ base, method });
+
+  const fieldModifier = FIELD_CONFIDENCE_MODIFIERS[fieldName] ?? 0;
+  if (fieldModifier > 0) {
+    const entry: FieldModifierEntry = boosted
+      ? { delta: fieldModifier, reason: 'Structured data match', source: 'page hint confirmed value' }
+      : { delta: fieldModifier, reason: 'Structured data match' };
+    ledger.push(entry);
+  } else if (fieldModifier < 0) {
+    ledger.push({
+      delta: fieldModifier,
+      reason: 'LLM inferred',
+      source: 'value interpreted from unstructured text',
+    });
+  }
+
+  ledger.push({ result: finalScore });
+  return ledger;
 }
 
 // ── LLM-as-Validator ────────────────────────────────────────────────

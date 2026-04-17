@@ -96,12 +96,21 @@ export function mapToUcp(
     { type: 'subtotal', amount: priceInCents },
   ];
 
+  // UCP format stays minimal: strip field_modifiers from the carried
+  // _shopgraph block. The per-field modifier ledger is available in the
+  // default API response but intentionally excluded from UCP line_items.
+  let ucpShopgraph: ShopGraphMetadata | undefined = product._shopgraph;
+  if (ucpShopgraph && ucpShopgraph.field_modifiers) {
+    const { field_modifiers: _stripped, ...rest } = ucpShopgraph;
+    ucpShopgraph = rest;
+  }
+
   const lineItem: UcpLineItem = {
     id: lineItemId,
     item,
     quantity: 1,
     totals,
-    _shopgraph: product._shopgraph,
+    _shopgraph: ucpShopgraph,
   };
 
   if (Object.keys(extractionStatus).length > 0) {

@@ -1,5 +1,5 @@
-import type { ProductData, PriceData, ExtractionMethod } from './types.js';
-import { SCHEMA_ORG_BASELINE, getFieldConfidence } from './types.js';
+import type { ProductData, PriceData, ExtractionMethod, FieldModifierEntry } from './types.js';
+import { SCHEMA_ORG_BASELINE, FIELD_CONFIDENCE_MODIFIERS, getFieldConfidence } from './types.js';
 
 /**
  * Extract Product data from JSON-LD blocks in HTML.
@@ -13,10 +13,13 @@ export function extractSchemaOrg(html: string): Partial<ProductData> | null {
 
   const perField: Record<string, number> = {};
   const perFieldMethod: Record<string, ExtractionMethod> = {};
+  const perFieldModifiers: Record<string, FieldModifierEntry[]> = {};
   const setField = (name: string, value: unknown): boolean => {
     if (value !== null && value !== undefined && value !== '') {
-      perField[name] = getFieldConfidence(SCHEMA_ORG_BASELINE, name);
+      const final = getFieldConfidence(SCHEMA_ORG_BASELINE, name);
+      perField[name] = final;
       perFieldMethod[name] = 'schema_org';
+      perFieldModifiers[name] = buildSchemaOrgLedger(name, final);
       return true;
     }
     return false;
@@ -72,8 +75,38 @@ export function extractSchemaOrg(html: string): Partial<ProductData> | null {
       overall,
       per_field: perField,
       per_field_method: perFieldMethod,
+      per_field_modifiers: perFieldModifiers,
     },
   };
+}
+
+/**
+ * Build the confidence modifier ledger for a Schema.org-sourced field.
+ * Ledger shape: base → delta(s) → result. Sum of base + deltas = result.
+ * Positive field-level modifiers map to "Structured data match"; negative
+ * modifiers map to "Single source" (no cross-validation from a second tier).
+ */
+function buildSchemaOrgLedger(fieldName: string, finalScore: number): FieldModifierEntry[] {
+  const ledger: FieldModifierEntry[] = [];
+  ledger.push({ base: SCHEMA_ORG_BASELINE, method: 'schema_org' });
+
+  const fieldModifier = FIELD_CONFIDENCE_MODIFIERS[fieldName] ?? 0;
+  if (fieldModifier > 0) {
+    ledger.push({
+      delta: fieldModifier,
+      reason: 'Structured data match',
+      source: `JSON-LD ${fieldName}`,
+    });
+  } else if (fieldModifier < 0) {
+    ledger.push({
+      delta: fieldModifier,
+      reason: 'Single source',
+      source: 'no cross-validation from second method',
+    });
+  }
+
+  ledger.push({ result: finalScore });
+  return ledger;
 }
 
 /**

@@ -1,4 +1,4 @@
-import type { ProductData, EnrichmentOptions, ShopGraphMetadata, ExtractionStatus, FieldFreshness, ExtractionMethod } from './types.js';
+import type { ProductData, EnrichmentOptions, ShopGraphMetadata, ExtractionStatus, FieldFreshness, ExtractionMethod, FieldModifierEntry } from './types.js';
 import { buildFieldFreshness, applyDecay } from './types.js';
 import { extractSchemaOrg } from './schema-org.js';
 import { extractWithLlm } from './llm-extract.js';
@@ -74,9 +74,10 @@ export function applyThresholdAndMetadata(
       ? buildFieldFreshness(originalConfidence, ageSeconds)
       : undefined;
 
-  // Promote per-field method attribution from the extraction result up
-  // to the response-level _shopgraph block.
+  // Promote per-field method + modifier ledger from the extraction result
+  // up to the response-level _shopgraph block.
   const perFieldMethod = product.confidence.per_field_method;
+  const perFieldModifiers = product.confidence.per_field_modifiers;
 
   // Always attach _shopgraph metadata
   const metadata: ShopGraphMetadata = {
@@ -87,6 +88,7 @@ export function applyThresholdAndMetadata(
     data_source: fromCache ? 'cache' : 'live',
     field_confidence: effectiveConfidence,
     ...(perFieldMethod && Object.keys(perFieldMethod).length > 0 ? { field_method: perFieldMethod } : {}),
+    ...(perFieldModifiers && Object.keys(perFieldModifiers).length > 0 ? { field_modifiers: perFieldModifiers } : {}),
     ...(fieldFreshness ? { field_freshness: fieldFreshness } : {}),
     confidence_method: product.extraction_method === 'hybrid' ? 'cross_signal' : 'tier_baseline',
   };
@@ -355,8 +357,11 @@ function mergeResults(primary: ProductData, secondary: Partial<ProductData>): Pr
   const mergedPerField = { ...primary.confidence.per_field };
   const primaryMethod = primary.confidence.per_field_method ?? {};
   const secondaryMethod = secondary.confidence?.per_field_method ?? {};
+  const primaryMods = primary.confidence.per_field_modifiers ?? {};
+  const secondaryMods = secondary.confidence?.per_field_modifiers ?? {};
 
   const mergedPerFieldMethod: Record<string, ExtractionMethod> = { ...primaryMethod };
+  const mergedPerFieldMods: Record<string, FieldModifierEntry[]> = { ...primaryMods };
 
   // Fill in fields only produced by secondary. A field counts as "only
   // secondary-produced" when either the primary lacked a per_field entry
@@ -372,21 +377,43 @@ function mergeResults(primary: ProductData, secondary: Partial<ProductData>): Pr
         if (secondaryMethod[field]) {
           mergedPerFieldMethod[field] = secondaryMethod[field];
         }
+        if (secondaryMods[field]) {
+          mergedPerFieldMods[field] = secondaryMods[field];
+        }
       } else if (mergedPerField[field] === undefined) {
         // Fields outside the primaryHas map (e.g. image_urls) — fall through.
         mergedPerField[field] = conf;
         if (secondaryMethod[field]) {
           mergedPerFieldMethod[field] = secondaryMethod[field];
         }
+        if (secondaryMods[field]) {
+          mergedPerFieldMods[field] = secondaryMods[field];
+        }
       }
     }
   }
 
-  // For fields both tiers produced AND agreed on, tag as 'hybrid'.
-  // Disagreement keeps the primary tier's method (primary wins the merge).
+  // For fields both tiers produced AND agreed on, tag as 'hybrid'. The
+  // Schema.org-based "Single source" penalty (applied during initial
+  // extraction) is removed since cross-validation now exists; this
+  // preserves existing field_confidence math because the underlying
+  // FIELD_CONFIDENCE_MODIFIERS constant stays the same — we simply
+  // re-frame the ledger reason to reflect the hybrid source.
   for (const field of Object.keys(agree)) {
     if (!agree[field]) continue;
     mergedPerFieldMethod[field] = 'hybrid';
+    const original = mergedPerFieldMods[field];
+    if (original && original.length > 0) {
+      const baseEntry = original.find((e): e is { base: number; method: ExtractionMethod } => 'base' in e);
+      const deltas = original.filter((e): e is { delta: number; reason: string; source?: string } => 'delta' in e);
+      const resultEntry = original.find((e): e is { result: number } => 'result' in e);
+      if (baseEntry && resultEntry) {
+        const newLedger: FieldModifierEntry[] = [{ base: baseEntry.base, method: 'hybrid' }];
+        for (const d of deltas) newLedger.push(d);
+        newLedger.push({ result: resultEntry.result });
+        mergedPerFieldMods[field] = newLedger;
+      }
+    }
   }
 
   const fieldCount = Object.keys(mergedPerField).length;
@@ -398,6 +425,7 @@ function mergeResults(primary: ProductData, secondary: Partial<ProductData>): Pr
     overall,
     per_field: mergedPerField,
     per_field_method: mergedPerFieldMethod,
+    per_field_modifiers: mergedPerFieldMods,
   };
   merged.extraction_method = 'hybrid';
 

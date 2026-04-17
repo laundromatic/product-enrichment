@@ -476,6 +476,31 @@ describe('_shopgraph.field_method (per-field extraction tier)', () => {
           price: 'llm',
           availability: 'llm',
         },
+        per_field_modifiers: {
+          product_name: [
+            { base: 0.70, method: 'llm' },
+            { delta: 0.05, reason: 'Structured data match' },
+            { result: 0.75 },
+          ],
+          brand: [
+            { base: 0.70, method: 'llm' },
+            { result: 0.70 },
+          ],
+          description: [
+            { base: 0.70, method: 'llm' },
+            { delta: -0.05, reason: 'LLM inferred', source: 'value interpreted from unstructured text' },
+            { result: 0.65 },
+          ],
+          price: [
+            { base: 0.70, method: 'llm' },
+            { result: 0.70 },
+          ],
+          availability: [
+            { base: 0.70, method: 'llm' },
+            { delta: -0.10, reason: 'LLM inferred', source: 'value interpreted from unstructured text' },
+            { result: 0.60 },
+          ],
+        },
       },
     });
 
@@ -528,6 +553,25 @@ describe('_shopgraph.field_method (per-field extraction tier)', () => {
           price: 'llm',
           availability: 'llm',
         },
+        per_field_modifiers: {
+          product_name: [
+            { base: 0.70, method: 'llm' },
+            { delta: 0.05, reason: 'Structured data match' },
+            { result: 0.75 },
+          ],
+          brand: [{ base: 0.70, method: 'llm' }, { result: 0.70 }],
+          description: [
+            { base: 0.70, method: 'llm' },
+            { delta: -0.05, reason: 'LLM inferred' },
+            { result: 0.65 },
+          ],
+          price: [{ base: 0.70, method: 'llm' }, { result: 0.70 }],
+          availability: [
+            { base: 0.70, method: 'llm' },
+            { delta: -0.10, reason: 'LLM inferred' },
+            { result: 0.60 },
+          ],
+        },
       },
     });
 
@@ -546,3 +590,195 @@ describe('_shopgraph.field_method (per-field extraction tier)', () => {
   });
 });
 
+describe('_shopgraph.field_modifiers (per-field confidence ledger)', () => {
+  function sumLedger(ledger: Array<Record<string, unknown>>): {
+    base: number; sumDeltas: number; result: number;
+  } {
+    let base = 0;
+    let sumDeltas = 0;
+    let result = 0;
+    for (const e of ledger) {
+      if ('base' in e && typeof e.base === 'number') base = e.base;
+      if ('delta' in e && typeof e.delta === 'number') sumDeltas += e.delta;
+      if ('result' in e && typeof e.result === 'number') result = e.result;
+    }
+    return { base, sumDeltas, result };
+  }
+
+  it('present for every confidence-scored field in a pure Schema.org extraction and sums to result', async () => {
+    mockFetch.mockResolvedValueOnce(mockResponse(shopifyHtml));
+
+    const result = await extractProduct('https://example.com/product');
+    const fieldModifiers = result._shopgraph!.field_modifiers;
+    const fieldConfidence = result._shopgraph!.field_confidence;
+
+    expect(fieldModifiers).toBeDefined();
+    expect(Object.keys(fieldModifiers!).length).toBeGreaterThan(0);
+
+    for (const field of Object.keys(fieldConfidence)) {
+      const ledger = fieldModifiers![field];
+      expect(ledger, `ledger missing for ${field}`).toBeDefined();
+      // Order: base → delta(s) → result
+      expect(ledger[0]).toHaveProperty('base');
+      expect(ledger[ledger.length - 1]).toHaveProperty('result');
+      // Sum identity: base + sum(deltas) = result (within 0.01)
+      const { base, sumDeltas, result: res } = sumLedger(ledger as Array<Record<string, unknown>>);
+      expect(Math.abs(base + sumDeltas - res)).toBeLessThanOrEqual(0.01);
+      // Deltas use only approved reasons
+      for (const entry of ledger) {
+        if ('delta' in entry) {
+          expect([
+            'Structured data match',
+            'Cross-validation',
+            'Single source',
+            'LLM inferred',
+            'Stale cache',
+          ]).toContain((entry as { reason: string }).reason);
+        }
+      }
+    }
+  });
+
+  it('present for every confidence-scored field in a pure LLM extraction and sums to result', async () => {
+    mockFetch.mockResolvedValueOnce(mockResponse(noSchemaHtml));
+    vi.mocked(extractWithLlm).mockResolvedValueOnce({
+      extraction_method: 'llm',
+      product_name: 'LLM Product',
+      brand: null,
+      description: 'A fine product',
+      price: { amount: 20.00, currency: 'USD', sale_price: null },
+      availability: 'in_stock',
+      categories: [],
+      image_urls: [],
+      primary_image_url: null,
+      color: [],
+      material: [],
+      dimensions: null,
+      schema_org_raw: null,
+      confidence: {
+        overall: 0.70,
+        per_field: {
+          product_name: 0.75,
+          description: 0.65,
+          price: 0.70,
+          availability: 0.60,
+        },
+        per_field_method: {
+          product_name: 'llm',
+          description: 'llm',
+          price: 'llm',
+          availability: 'llm',
+        },
+        per_field_modifiers: {
+          product_name: [
+            { base: 0.70, method: 'llm' },
+            { delta: 0.05, reason: 'Structured data match' },
+            { result: 0.75 },
+          ],
+          description: [
+            { base: 0.70, method: 'llm' },
+            { delta: -0.05, reason: 'LLM inferred', source: 'value interpreted from unstructured text' },
+            { result: 0.65 },
+          ],
+          price: [{ base: 0.70, method: 'llm' }, { result: 0.70 }],
+          availability: [
+            { base: 0.70, method: 'llm' },
+            { delta: -0.10, reason: 'LLM inferred', source: 'value interpreted from unstructured text' },
+            { result: 0.60 },
+          ],
+        },
+      },
+    });
+
+    const result = await extractProduct('https://example.com/llm-ledger');
+    const fieldModifiers = result._shopgraph!.field_modifiers!;
+    const fieldConfidence = result._shopgraph!.field_confidence;
+
+    for (const field of Object.keys(fieldConfidence)) {
+      const ledger = fieldModifiers[field];
+      expect(ledger, `ledger missing for ${field}`).toBeDefined();
+      expect(ledger[0]).toHaveProperty('base');
+      expect(ledger[ledger.length - 1]).toHaveProperty('result');
+      const { base, sumDeltas, result: res } = sumLedger(ledger as Array<Record<string, unknown>>);
+      expect(Math.abs(base + sumDeltas - res)).toBeLessThanOrEqual(0.01);
+    }
+  });
+
+  it('present for every confidence-scored field in a hybrid merge and sums to result', async () => {
+    const partialSchemaHtml = `<script type="application/ld+json">
+      {"@type": "Product", "name": "Hybrid Product"}
+    </script>`;
+    mockFetch.mockResolvedValueOnce(mockResponse(partialSchemaHtml));
+    vi.mocked(extractWithLlm).mockResolvedValueOnce({
+      extraction_method: 'llm',
+      product_name: 'Hybrid Product', // agrees with schema.org
+      brand: 'LlmBrand',
+      description: 'Filled by LLM',
+      price: { amount: 42.00, currency: 'USD', sale_price: null },
+      availability: 'in_stock',
+      categories: [],
+      image_urls: [],
+      primary_image_url: null,
+      color: [],
+      material: [],
+      dimensions: null,
+      schema_org_raw: null,
+      confidence: {
+        overall: 0.70,
+        per_field: {
+          product_name: 0.75,
+          brand: 0.70,
+          description: 0.65,
+          price: 0.70,
+          availability: 0.60,
+        },
+        per_field_method: {
+          product_name: 'llm',
+          brand: 'llm',
+          description: 'llm',
+          price: 'llm',
+          availability: 'llm',
+        },
+        per_field_modifiers: {
+          product_name: [
+            { base: 0.70, method: 'llm' },
+            { delta: 0.05, reason: 'Structured data match' },
+            { result: 0.75 },
+          ],
+          brand: [{ base: 0.70, method: 'llm' }, { result: 0.70 }],
+          description: [
+            { base: 0.70, method: 'llm' },
+            { delta: -0.05, reason: 'LLM inferred' },
+            { result: 0.65 },
+          ],
+          price: [{ base: 0.70, method: 'llm' }, { result: 0.70 }],
+          availability: [
+            { base: 0.70, method: 'llm' },
+            { delta: -0.10, reason: 'LLM inferred' },
+            { result: 0.60 },
+          ],
+        },
+      },
+    });
+
+    const result = await extractProduct('https://example.com/hybrid-ledger');
+    const fieldModifiers = result._shopgraph!.field_modifiers!;
+    const fieldConfidence = result._shopgraph!.field_confidence;
+    const fieldMethod = result._shopgraph!.field_method!;
+
+    // All confidence-scored fields have a ledger
+    for (const field of Object.keys(fieldConfidence)) {
+      const ledger = fieldModifiers[field];
+      expect(ledger, `ledger missing for ${field}`).toBeDefined();
+      expect(ledger[0]).toHaveProperty('base');
+      expect(ledger[ledger.length - 1]).toHaveProperty('result');
+      const { base, sumDeltas, result: res } = sumLedger(ledger as Array<Record<string, unknown>>);
+      expect(Math.abs(base + sumDeltas - res)).toBeLessThanOrEqual(0.01);
+    }
+
+    // Hybrid field: base entry's method should be 'hybrid'
+    expect(fieldMethod.product_name).toBe('hybrid');
+    const hybridLedger = fieldModifiers.product_name as Array<Record<string, unknown>>;
+    expect((hybridLedger[0] as { base: number; method: string }).method).toBe('hybrid');
+  });
+});
