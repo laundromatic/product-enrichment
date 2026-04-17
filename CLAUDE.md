@@ -75,14 +75,20 @@ When work is verified complete: move to Done.
 When a ticket is superseded: move to Canceled with a comment explaining what replaced it.
 
 ### Active Tickets
-- LAU-280: Framework PRs — In Progress, Vercel AI SDK + LangChain PRs submitted Apr 14
+- LAU-280: Framework PRs — In Progress, Vercel AI SDK + LangChain PRs submitted + Phase 4 aligned 2026-04-16
 - LAU-285: Make.com app — In Progress, needs scenario testing with sg_live_ API key
 - LAU-287: Confidence scoring — In Progress, Phase 1 shipped, calibration needs ENABLE_LLM_VALIDATION
 - LAU-296: RFC 9421 identity — In Progress, infra shipped, registry registration pending (includes old LAU-307)
 - LAU-275: AgentReady scoring — In Progress, scoring API shipped, leaderboard/correlation pending
 - LAU-308: B2B vertical coverage — In Progress, 30 sites verified
 - LAU-309: Leaderboard v2 — In Progress, Phases 1-3 shipped, Phase 4 (metrics) pending
-- LAU-259: MCP directory registration — In Progress, P3
+- LAU-259: MCP directory registration — In Progress, P3 (directory listings need Phase 4 copy)
+- LAU-310: Page purpose overlap (self-healing / routing / playground) — Todo
+- LAU-316: No self-serve upgrade path free → paid — Todo, High (2026-04-16, signup frontend + email stubbed)
+- Recently Done: LAU-314 (confidence contract rewrite), LAU-315 (/output/ flatten), LAU-318 (FRESHNESS on force-live)
+
+### Phase 4 Positioning (2026-04-16)
+See `memory/phase-4-positioning.md` for locked branding. 1-liner is "The extraction API that shows its work." Supersedes Phase 3 "authenticated product data extraction." Banned term additions: "Transparent uncertainty" → "Extraction provenance"; "identity stacks" → "extraction infrastructure"; "routing around Cloudflare blocks" → "escalating through tiers". Naming decision: keep `enrich_*` everywhere in code/API/MCP/SDK; playground button stays "Extract". Autonomy via `strict_confidence_threshold` parameter on the single `enrich_product` tool — no advertising `enrich_product_for_autofill` until it ships.
 
 ## n8n Safety Rules
 See ~/.claude/CLAUDE.md for n8n execution budget rules and workflow safety protocol.
