@@ -3,17 +3,16 @@
   var state = {
     result: null,
     loading: false,
+    threshold: 0,
   };
 
   function $(id) { return document.getElementById(id); }
 
   function getOptions() {
     var opts = {};
-    var thresholdEl = $('pg-threshold');
-    if (thresholdEl && thresholdEl.value && parseFloat(thresholdEl.value) > 0) {
-      opts.strict_confidence_threshold = parseFloat(thresholdEl.value);
-    }
-    // Fetch mode radio: standard vs force_live
+    // Fetch mode radio: standard vs force_live. Threshold is NOT sent
+    // pre-extraction anymore — users drag a post-extraction slider to
+    // filter visually (Scope 2 of Phase 4 Playground enhancement).
     var modeRadio = document.querySelector('input[name="pg-fetch-mode"]:checked');
     if (modeRadio && modeRadio.value === 'force_live') {
       opts.force_refresh = true;
@@ -30,6 +29,7 @@
     if (!url) return;
 
     state.loading = true;
+    state.threshold = 0;
     btn.disabled = true;
     btn.textContent = 'Extracting...';
     if (loading) loading.style.display = 'block';
@@ -76,6 +76,29 @@
     return 'badge-red';
   }
 
+  // Map API extraction_method value to human-readable SOURCE column label.
+  // Per-field source attribution is not in the API response today — we use
+  // the document-level extraction_method as the source for every field.
+  // TODO: per-field source requires backend work on _shopgraph.field_method.
+  function sourceLabel(method) {
+    if (!method) return '—';
+    if (method === 'schema_org') return 'Schema.org';
+    if (method === 'llm') return 'LLM inference';
+    if (method === 'llm_boosted') return 'LLM + Schema.org';
+    if (method === 'hybrid') return 'Schema.org + LLM';
+    if (method === 'playwright') return 'Browser rendering';
+    return method;
+  }
+
+  // Tier baseline confidence per extraction method (matches src/types.ts).
+  function tierBaseline(method) {
+    if (method === 'schema_org') return 0.93;
+    if (method === 'llm') return 0.70;
+    if (method === 'llm_boosted') return 0.85;
+    if (method === 'hybrid') return 0.85;
+    return null;
+  }
+
   function renderResult(data) {
     var container = $('pg-result');
     if (!data || !container) return;
@@ -85,20 +108,18 @@
       var link = data.upgrade || data.signup || data.pricing || '';
       var linkHtml = '';
       if (link) {
-        var linkText = 'See pricing';
-        linkHtml = ' <a href="' + link + '" style="color:var(--link-color);font-weight:500">' + linkText + '</a>';
+        linkHtml = ' <a href="' + link + '" style="color:var(--link-color);font-weight:500">See pricing</a>';
       }
       container.innerHTML = '<div style="background:rgba(0,0,0,0.03);border:1px solid var(--border-color);border-radius:0.375rem;padding:0.75rem 1rem;font-size:0.8125rem;color:var(--body-color)">' + escapeHtml(msg) + linkHtml + '</div>';
-      var resultsWrap = $('pg-results');
-      if (resultsWrap) resultsWrap.classList.add('visible');
+      var errWrap = $('pg-results');
+      if (errWrap) errWrap.classList.add('visible');
       return;
     }
 
-    // Warning: no product data found (category page, non-product URL)
     if (data.warning === 'no_product_data') {
       container.innerHTML = '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:0.375rem;padding:0.75rem 1rem;font-size:0.8125rem;color:#92400e">' + escapeHtml(data.warning_message) + '</div>';
-      var resultsWrap = $('pg-results');
-      if (resultsWrap) resultsWrap.classList.add('visible');
+      var warnWrap = $('pg-results');
+      if (warnWrap) warnWrap.classList.add('visible');
       return;
     }
 
@@ -107,7 +128,7 @@
     var confidence = product.confidence || {};
     var fieldConf = shopgraph.field_confidence || confidence.per_field || {};
     var fieldFreshness = shopgraph.field_freshness || {};
-    var method = product.extraction_method || 'unknown';
+    var method = product.extraction_method || shopgraph.extraction_method || 'unknown';
     var dataSource = shopgraph.data_source || (data.cached ? 'cache' : 'live');
     var creditMode = data.credit_mode || 'standard';
     var extractionStatus = product._extraction_status || {};
@@ -119,29 +140,26 @@
       html += '<span class="badge ' + oc + '">Confidence: ' + (confidence.overall * 100).toFixed(0) + '%</span>';
     }
     html += '<span class="badge badge-blue">' + method + '</span>';
-
-    // Data source badge
     if (dataSource === 'cache') {
       html += '<span class="badge badge-yellow">cache</span>';
     } else {
       html += '<span class="badge badge-green">live</span>';
     }
-
-    // Credit mode badge
     if (creditMode !== 'standard') {
       html += '<span class="badge badge-gray">' + creditMode + '</span>';
     }
-
     if (data.free_tier) {
       html += '<span class="badge badge-gray">' + data.free_tier.used + '/' + data.free_tier.limit + ' free</span>';
     }
     html += '</div>';
 
-    // Fields table with per-field confidence
+    // Fields table: [expand caret] | FIELD | VALUE | SOURCE | CONFIDENCE | FRESHNESS
     var fields = ['product_name', 'brand', 'price', 'description', 'availability', 'categories', 'image_urls'];
-    html += '<table style="width:100%;font-size:13px;border-collapse:collapse"><thead><tr style="border-bottom:1px solid rgba(0,0,0,0.08)">';
+    html += '<table style="width:100%;font-size:13px;border-collapse:collapse" id="pg-fields-table"><thead><tr style="border-bottom:1px solid rgba(0,0,0,0.08)">';
+    html += '<th style="padding:6px 8px;text-align:left;font-size:11px;color:#999;font-weight:600;width:24px"></th>';
     html += '<th style="padding:6px 8px;text-align:left;font-size:11px;color:#999;font-weight:600">FIELD</th>';
     html += '<th style="padding:6px 8px;text-align:left;font-size:11px;color:#999;font-weight:600">VALUE</th>';
+    html += '<th style="padding:6px 8px;text-align:left;font-size:11px;color:#999;font-weight:600">SOURCE</th>';
     html += '<th style="padding:6px 8px;text-align:right;font-size:11px;color:#999;font-weight:600">CONFIDENCE</th>';
     html += '<th style="padding:6px 8px;text-align:right;font-size:11px;color:#999;font-weight:600">FRESHNESS</th>';
     html += '</tr></thead><tbody>';
@@ -149,31 +167,31 @@
     fields.forEach(function (f) {
       var val = product[f];
       var scrubbed = extractionStatus[f];
-      var displayVal = val;
+      var displayVal;
 
       if (scrubbed) {
-        displayVal = '<span style="color:#ef4444;font-style:italic" title="' + escapeHtml(scrubbed.message) + '">scrubbed (below threshold)</span>';
+        displayVal = '<span style="color:#ef4444;font-style:italic">scrubbed (below threshold)</span>';
       } else if (val === null || val === undefined) {
         displayVal = '<span style="color:#666">--</span>';
       } else if (typeof val === 'object' && val.amount !== undefined) {
         displayVal = (val.currency || '') + ' ' + val.amount;
       } else if (Array.isArray(val)) {
         displayVal = val.length + ' items';
-      } else if (typeof displayVal === 'string' && displayVal.length > 80) {
-        displayVal = escapeHtml(displayVal.substring(0, 80)) + '...';
+      } else if (typeof val === 'string' && val.length > 80) {
+        displayVal = escapeHtml(val.substring(0, 80)) + '...';
       } else {
-        displayVal = escapeHtml(String(displayVal));
+        displayVal = escapeHtml(String(val));
       }
 
       var conf = fieldConf[f];
-      var confStr = conf !== undefined ? (conf * 100).toFixed(1) + '%' : '';
+      var hasConf = conf !== undefined && conf !== null;
+      var confStr = hasConf ? (conf * 100).toFixed(1) + '%' : '';
       var cc = confColor(conf);
+      var source = hasConf ? sourceLabel(method) : '—';
 
-      // Freshness indicator: "Live" for just-extracted data,
-      // fresh/decayed for cached data based on backend field_freshness.
       var freshness = fieldFreshness[f];
       var freshnessStr = '';
-      if (dataSource === 'live') {
+      if (dataSource === 'live' && hasConf) {
         freshnessStr = '<span style="color:#22c55e">Live</span>';
       } else if (freshness) {
         if (freshness.decayed) {
@@ -183,14 +201,37 @@
         }
       }
 
-      html += '<tr style="border-bottom:1px solid rgba(0,0,0,0.06)">';
+      // Field row — clickable to expand breakdown
+      var confAttr = hasConf ? conf : '';
+      html += '<tr class="pg-field-row" data-field="' + f + '" data-conf="' + confAttr + '" style="border-bottom:1px solid rgba(0,0,0,0.06);cursor:pointer;transition:opacity 0.2s" onclick="window.ShopGraphPlayground.toggleRow(\'' + f + '\')">';
+      html += '<td style="padding:6px 8px;text-align:center;font-size:10px;color:#999;user-select:none"><span id="pg-caret-' + f + '">&#9656;</span></td>';
       html += '<td style="padding:6px 8px;font-family:var(--font-mono);font-size:11px;font-weight:500;color:var(--text-secondary);width:140px">' + f + '</td>';
-      html += '<td style="padding:6px 8px;max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + displayVal + '</td>';
+      html += '<td class="pg-value-cell" style="padding:6px 8px;max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + displayVal + '</td>';
+      html += '<td style="padding:6px 8px;font-size:11px;color:var(--text-secondary)">' + source + '</td>';
       html += '<td style="padding:6px 8px;text-align:right;font-weight:600;font-size:11px;width:70px"><span style="color:' + cc + '">' + confStr + '</span></td>';
       html += '<td style="padding:6px 8px;text-align:right;font-size:11px;width:70px">' + freshnessStr + '</td>';
       html += '</tr>';
+
+      // Detail row (collapsed by default)
+      html += '<tr class="pg-field-detail" id="pg-detail-' + f + '" style="display:none"><td colspan="6" style="padding:12px 16px;background:rgba(0,0,0,0.02);border-bottom:1px solid rgba(0,0,0,0.06)">';
+      html += buildBreakdownHtml(f, conf, method);
+      html += '<div style="margin-top:8px;font-size:11px"><a href="/features/confidence" style="color:var(--link-color)">How scores are calculated &rarr;</a></div>';
+      html += '</td></tr>';
     });
     html += '</tbody></table>';
+
+    // Post-extraction threshold slider
+    html += '<div id="pg-threshold-panel" style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(0,0,0,0.06)">';
+    html += '<label style="display:flex;align-items:center;gap:12px;font-size:12px;color:var(--text-secondary);font-weight:500">';
+    html += '<span style="white-space:nowrap">Filter fields below:</span>';
+    html += '<span id="pg-filter-val" style="font-family:var(--font-mono);color:#111;min-width:40px">0.00</span>';
+    html += '<input id="pg-filter-slider" type="range" min="0" max="1" step="0.05" value="0" style="flex:1;max-width:240px;accent-color:#007AFF">';
+    html += '</label>';
+    html += '<p style="font-size:11px;color:var(--text-muted);margin:8px 0 0">This slider simulates the <code>strict_confidence_threshold</code> API parameter. In production, filtered fields are removed server-side before reaching your agent.</p>';
+    html += '</div>';
+
+    // Cross-link: back to How Extraction Works
+    html += '<div style="margin-top:12px;font-size:12px"><a href="/features/self-healing" style="color:var(--text-muted);text-decoration:underline">Want to understand the pipeline? &rarr; How Extraction Works</a></div>';
 
     // Full JSON toggle
     html += '<details style="margin-top:12px"><summary style="cursor:pointer;font-size:12px;color:var(--link-color)">View full JSON response</summary>';
@@ -199,18 +240,27 @@
 
     container.innerHTML = html;
 
-    // After rendering results, show remaining runs
+    // Wire post-extraction threshold slider
+    var slider = $('pg-filter-slider');
+    var valEl = $('pg-filter-val');
+    if (slider) {
+      slider.addEventListener('input', function () {
+        var t = parseFloat(slider.value);
+        state.threshold = t;
+        if (valEl) valEl.textContent = t.toFixed(2);
+        applyFilter(t);
+      });
+    }
+
     if (data.runs_remaining !== undefined) {
       var quotaHtml = '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.5rem">' + data.runs_remaining + ' / 5 runs left today</div>';
       container.innerHTML += quotaHtml;
     }
 
-
-    // Show the results container
     var resultsWrap = $('pg-results');
     if (resultsWrap) resultsWrap.classList.add('visible');
 
-    // Add close/clear button at top of results
+    // Close/clear button
     var closeBtn = document.createElement('button');
     closeBtn.textContent = 'Clear results';
     closeBtn.style.cssText = 'background:none;border:1px solid var(--border-color);border-radius:0.375rem;padding:0.25rem 0.75rem;font-size:0.75rem;color:var(--text-secondary);cursor:pointer;margin-bottom:0.75rem;font-family:var(--font-sans)';
@@ -221,17 +271,75 @@
     container.insertBefore(closeBtn, container.firstChild);
   }
 
-  function escapeHtml(str) {
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  // Build the per-field confidence breakdown block shown when a row expands.
+  // Modifier-level detail is not exposed by the API today — we show the
+  // tier baseline, the delta to the final score, and link out to
+  // /features/confidence for the full methodology.
+  // TODO: richer breakdown requires backend support in _shopgraph metadata.
+  function buildBreakdownHtml(field, conf, method) {
+    if (conf === undefined || conf === null) {
+      return '<div style="font-family:var(--font-mono);font-size:11px;color:var(--body-color)">' +
+             escapeHtml(field) + ': no confidence scoring' +
+             '</div><div style="font-size:11px;color:var(--text-secondary);margin-top:4px">List fields report count only. Confidence scoring applies to scalar values (price, title, brand, availability).</div>';
+    }
+    var baseline = tierBaseline(method);
+    var lines = [];
+    var pct = (conf * 100).toFixed(0) + '%';
+    lines.push(escapeHtml(field) + ': ' + pct);
+    if (baseline !== null) {
+      lines.push('  Base: ' + baseline.toFixed(2) + ' (' + sourceLabel(method) + ' tier baseline)');
+      var delta = conf - baseline;
+      if (Math.abs(delta) >= 0.005) {
+        var sign = delta > 0 ? '+' : '';
+        lines.push('  ' + sign + delta.toFixed(2) + ' Field-level modifier adjustments');
+      }
+      lines.push('  = ' + conf.toFixed(2));
+    } else {
+      lines.push('  (Method: ' + escapeHtml(method) + ')');
+    }
+    return '<pre style="margin:0;font-family:var(--font-mono);font-size:11px;background:transparent;padding:0;color:var(--body-color);white-space:pre-wrap">' + lines.join('\n') + '</pre>';
   }
 
-  function updateThresholdDisplay() {
-    var el = $('pg-threshold');
-    var display = $('pg-threshold-val');
-    if (el && display) {
-      var val = parseFloat(el.value);
-      display.textContent = val > 0 ? val.toFixed(2) : 'Off';
-    }
+  // Apply the visual filter to rows based on a confidence threshold.
+  // Rows below threshold get muted opacity and the value cell is struck
+  // through with a "scrubbed (below threshold)" badge. The row is NOT
+  // removed — users need to see WHY it was filtered.
+  function applyFilter(threshold) {
+    var rows = document.querySelectorAll('.pg-field-row');
+    rows.forEach(function (row) {
+      var confAttr = row.getAttribute('data-conf');
+      if (!confAttr) return;
+      var conf = parseFloat(confAttr);
+      var valCell = row.querySelector('.pg-value-cell');
+      if (!valCell) return;
+      if (conf < threshold) {
+        row.style.opacity = '0.45';
+        if (!valCell.dataset.original) {
+          valCell.dataset.original = valCell.innerHTML;
+          valCell.innerHTML = '<s>' + valCell.dataset.original + '</s> <span style="color:#ef4444;font-style:italic;font-size:11px">scrubbed (below threshold)</span>';
+        }
+      } else {
+        row.style.opacity = '1';
+        if (valCell.dataset.original) {
+          valCell.innerHTML = valCell.dataset.original;
+          delete valCell.dataset.original;
+        }
+      }
+    });
+  }
+
+  function toggleRow(field) {
+    var detail = document.getElementById('pg-detail-' + field);
+    var caret = document.getElementById('pg-caret-' + field);
+    if (!detail) return;
+    var isOpen = detail.style.display !== 'none';
+    detail.style.display = isOpen ? 'none' : 'table-row';
+    if (caret) caret.innerHTML = isOpen ? '&#9656;' : '&#9662;';
+  }
+
+  function escapeHtml(str) {
+    if (str === undefined || str === null) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
   function initPlayground() {
@@ -246,17 +354,13 @@
         if (e.key === 'Enter') runPlayground();
       });
     }
-
-    // Threshold slider
-    var thresholdEl = $('pg-threshold');
-    if (thresholdEl) {
-      thresholdEl.addEventListener('input', updateThresholdDisplay);
-      updateThresholdDisplay();
-    }
   }
 
-  // Export for external use
-  window.ShopGraphPlayground = { run: runPlayground };
+  // Export for external use + onclick handlers
+  window.ShopGraphPlayground = {
+    run: runPlayground,
+    toggleRow: toggleRow,
+  };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initPlayground);
