@@ -238,9 +238,15 @@
     html += '<pre style="background:#f8f8f8;color:#333;padding:0.875rem 1rem;border-radius:0.5rem;font-size:0.75rem;overflow-x:auto;margin-top:0.5rem;max-height:400px;overflow-y:auto;border:1px solid rgba(0,0,0,0.06)"><code>' + escapeHtml(JSON.stringify(data, null, 2)) + '</code></pre>';
     html += '</details>';
 
+    // Quota footer (append to html BEFORE innerHTML assignment — later
+    // innerHTML mutations would detach listeners attached below).
+    if (data.runs_remaining !== undefined) {
+      html += '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.5rem">' + data.runs_remaining + ' / 5 runs left today</div>';
+    }
+
     container.innerHTML = html;
 
-    // Wire post-extraction threshold slider
+    // Wire post-extraction threshold slider (after innerHTML assignment)
     var slider = $('pg-filter-slider');
     var valEl = $('pg-filter-val');
     if (slider) {
@@ -250,11 +256,6 @@
         if (valEl) valEl.textContent = t.toFixed(2);
         applyFilter(t);
       });
-    }
-
-    if (data.runs_remaining !== undefined) {
-      var quotaHtml = '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.5rem">' + data.runs_remaining + ' / 5 runs left today</div>';
-      container.innerHTML += quotaHtml;
     }
 
     var resultsWrap = $('pg-results');
