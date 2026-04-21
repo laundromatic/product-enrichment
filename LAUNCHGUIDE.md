@@ -1,12 +1,12 @@
 # ShopGraph
 
 ## Tagline
-The extraction API that shows its work — structured product data from any URL.
+The extraction API that shows its work.
 
 ## Description
-ShopGraph turns any product URL (or raw HTML) into structured JSON with per-field confidence scoring and extraction provenance. Every field in the response shows which method produced it — Schema.org parsing, LLM inference, or headless browser rendering — and how confident the system is. Agents can set `strict_confidence_threshold` and uncertain fields are removed server-side before they ever reach the agent, so you never act on guesses.
+ShopGraph extracts product data from any URL and shows you exactly how each field was derived. Per-field provenance and confidence based on extraction method, not opinion. Your automation decides what's reliable enough to act on.
 
-Built for AI agents that need reliable product data without building their own extraction pipeline. Works as a hosted remote MCP server at `https://shopgraph.dev/mcp`. 50 free calls per month, no signup. Paid tiers via API key (`sg_live_…`) or pay-per-call via Stripe MPP.
+Hosted remote MCP server at `https://shopgraph.dev/mcp`. 50 free calls per month, no signup. Paid usage via API key (`sg_live_…`) or pay-per-call via Stripe MPP.
 
 ## Setup Requirements
 - `payment_method_id` (optional): Stripe payment method ID for pay-per-call agent usage via Stripe MPP. Get one from your Stripe account at https://stripe.com. Free tier works without this.
@@ -41,7 +41,7 @@ Developer Tools
 commerce, e-commerce, product-data, shopping, price-extraction, product-enrichment, schema-org, ai-agents, agentic-commerce, catalog, retail, DTC, B2B, open-web, structured-data, stripe-mpp, confidence-scoring, extraction-provenance, ucp, universal-commerce-protocol
 
 ## Documentation URL
-https://shopgraph.dev/docs
+https://shopgraph.dev/install
 
 ## Health Check URL
 https://shopgraph.dev/health
