@@ -138,7 +138,7 @@ async function updateCustomerTierByStripe(redisClient: NonNullable<ReturnType<ty
   await redisClient.set(`apikey:${customer.apiKeyHash}`, JSON.stringify(customer));
 }
 
-app.use(express.json());
+app.use(express.json({ limit: '2mb' }));
 
 const redis = getRedis();
 app.use(createAuthMiddleware(redis));
