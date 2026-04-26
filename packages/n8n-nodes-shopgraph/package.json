@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-shopgraph",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "n8n community node for product data extraction with per-field confidence scoring and extraction provenance. Returns UCP-compliant JSON.",
   "keywords": [
     "n8n-community-node-package",
